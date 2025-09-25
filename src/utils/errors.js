@@ -1,3 +1,4 @@
+// src/utils/errors.js
 class AppError extends Error {
   constructor(message, statusCode, error = null) {
     super(message);
@@ -6,4 +7,4 @@ class AppError extends Error {
   }
 }
 
-export default AppError;
+export { AppError };
