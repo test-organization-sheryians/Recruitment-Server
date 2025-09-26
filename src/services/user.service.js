@@ -4,7 +4,7 @@ import MongoUserRepository from "../repositories/implementations/MongoUserReposi
 import RedisCacheRepository from "../repositories/implementations/RedisCacheRepository.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
-import config from '../config/environment.js';
+import config from "../config/environment.js";
 
 const { JWT_SECRET } = config; // ✅ destructuring from default export
 
@@ -14,30 +14,13 @@ class UserService {
     this.cacheRepository = new RedisCacheRepository();
   }
 
-  // Validation schema for user creation
-  createUserSchema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(8).required(),
-    role: Joi.string().valid("Admin", "Candidate", "Client").required(),
-    name: Joi.string().min(2).required(),
-  });
-
-  // Validation schema for user update
-  updateUserSchema = Joi.object({
-    email: Joi.string().email(),
-    name: Joi.string().min(2),
-    role: Joi.string().valid("Admin", "Candidate", "Client"),
-  });
-
   async register(userData) {
-    const { error } = this.createUserSchema.validate(userData);
-    if (error) throw new AppError(error.message, 400);
-
     const cacheKey = `user:email:${userData.email}`;
     let existingUser = await this.cacheRepository.get(cacheKey);
     if (!existingUser) {
       existingUser = await this.userRepository.findUserByEmail(userData.email);
-      if (existingUser) await this.cacheRepository.set(cacheKey, existingUser, 3600);
+      if (existingUser)
+        await this.cacheRepository.set(cacheKey, existingUser, 3600);
     }
     if (existingUser) throw new AppError("Email already exists", 409);
 
@@ -45,49 +28,70 @@ class UserService {
 
     await this.cacheRepository.set(
       `user:id:${user._id}`,
-      { id: user._id, email: user.email, role: user.role, name: user.name },
+      { id: user._id, email: user.email,  role: user.role, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
       3600
     );
     await this.cacheRepository.set(cacheKey, user, 3600);
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+   
 
-    return { user: { id: user._id, email: user.email, role: user.role, name: user.name }, token };
+    return {
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber
+      },
+      token,
+    };
   }
 
   async login({ email, password }) {
-    const schema = Joi.object({
-      email: Joi.string().email().required(),
-      password: Joi.string().required(),
-    });
-    const { error } = schema.validate({ email, password });
-    if (error) throw new AppError(error.message, 400);
-
     const cacheKey = `user:email:${email}`;
-  let user = await this.cacheRepository.get(cacheKey);
-if (user) {
-  // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
-  user.comparePassword = async function(password) {
-    const bcrypt = await import("bcryptjs");
-    return bcrypt.compare(password, this.password);
-  };
-} else {
-  user = await this.userRepository.findUserByEmail(email);
-  if (!user) throw new AppError("Invalid credentials", 401);
+    let user = await this.cacheRepository.get(cacheKey);
+    if (user) {
+      // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
+      user.comparePassword = async function (password) {
+        const bcrypt = await import("bcryptjs");
+        return bcrypt.compare(password, this.password);
+      };
+    } else {
+      user = await this.userRepository.findUserByEmail(email);
+      if (!user) throw new AppError("Invalid credentials", 401);
 
-  // Cache me store
-  await this.cacheRepository.set(cacheKey, {
-    id: user._id,
-    email: user.email,
-    role: user.role,
-    name: user.name,
-    password: user.password,
-  }, 3600);
-}
+      // Cache me store
+      await this.cacheRepository.set(
+        cacheKey,
+        {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          password: user.password,
+        },
+        3600
+      );
+    }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+  
 
-    return { user: { id: user._id, email: user.email, role: user.role, name: user.name }, token };
+    return {
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+      },
+      token,
+    };
   }
 
   async getUser(id) {
@@ -96,7 +100,11 @@ if (user) {
     if (!user) {
       user = await this.userRepository.findUserById(id);
       if (!user) throw new AppError("User not found", 404);
-      await this.cacheRepository.set(cacheKey, { id: user._id, email: user.email, role: user.role, name: user.name }, 3600);
+      await this.cacheRepository.set(
+        cacheKey,
+        { id: user._id, email: user.email, role: user.role, name: user.name },
+        3600
+      );
     }
     return user;
   }
@@ -121,7 +129,12 @@ if (user) {
       }
     }
 
-    return { id: user._id, email: user.email, role: user.role, name: user.name };
+    return {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    };
   }
 }
 

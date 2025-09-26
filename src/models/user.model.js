@@ -10,19 +10,35 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
+  phoneNumber:{
+    type: String,
+  },
   password: {
     type: String,
-    required: true,
   },
   role: {
     type: String,
     enum: ["Admin", "Candidate", "Client"],
     required: true,
   },
-  name: {
+  firstName: {
     type: String,
     required: true,
-    trim: true,
+  },
+  lastName: {
+    type: String,
+    required: true,
+  },
+  googleId: {
+    type: String,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  roleId:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Role",
   },
   createdAt: {
     type: Date,

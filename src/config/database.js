@@ -7,8 +7,7 @@ import logger from "../utils/logger.js";
 export async function connectDB() {
   try {
     await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    
     });
     logger.info("MongoDB connected successfully");
   } catch (error) {

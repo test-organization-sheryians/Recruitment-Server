@@ -1,12 +1,12 @@
 import express from "express";
 import router from './routes/users.js '
 import errorHandler from './middlewares/errorHandler.middleware.js';
-
+import cookieParser from "cookie-parser";
 const app = express();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
-
+app.use(cookieParser());
 // Mount all routes under /api
 app.use("/api/users", router);
 
