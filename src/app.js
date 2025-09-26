@@ -1,17 +1,21 @@
 import express from "express";
-import errorHandler from "./middlewares/errorHandler.middleware.js";
-
-
+import router from './routes/users.js '
+import errorHandler from './middlewares/errorHandler.middleware.js';
+import cookieParser from "cookie-parser";
 const app = express();
 
-
-
-// Error Handler
-app.use(errorHandler);
+// Middleware to parse JSON bodies
+app.use(express.json());
+app.use(cookieParser());
+// Mount all routes under /api
+app.use("/api/users", router);
 
 // only for testing remove it if you want
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+// Error Handler (after routes)
+app.use(errorHandler);
 
 export default app;

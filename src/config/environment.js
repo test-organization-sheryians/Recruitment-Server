@@ -2,8 +2,11 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 export default {
-    MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/recruitment',
-    REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-    JWT_SECRET: process.env.JWT_SECRET || 'your_jwt_secret',
-    PORT: process.env.PORT || 3000,
+   MONGO_URI: process.env.MONGO_URI,
+  REDIS_PORT: process.env.REDIS_PORT,
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+  REDIS_HOST: process.env.REDIS_HOST,
+  REDIS_USERNAME: process.env.REDIS_USERNAME,
+  JWT_SECRET: process.env.JWT_SECRET,
+  PORT: process.env.PORT || 3000,
 };
