@@ -1,4 +1,4 @@
-// src/middlewares/auth.js
+// src/middlewares/auth.middleware.js
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/environment.js";
 import { AppError } from "../utils/errors.js";
