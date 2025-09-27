@@ -1,5 +1,4 @@
-import mongoose from "./user.model";
-
+import mongoose from "mongoose";
 const AITestSchema = new mongoose.Schema(
   {
     userId: {
@@ -21,5 +20,4 @@ const AITestSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports =
-  mongoose.models.AITest || mongoose.model("AITest", AITestSchema);
+export default mongoose.model("AITest", AITestSchema);
