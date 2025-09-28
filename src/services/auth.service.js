@@ -78,7 +78,7 @@ class AuthService {
         }
       }
     ]);
-
+   
     return result[0]?.hasPermission || false;
   }
 

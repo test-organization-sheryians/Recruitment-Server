@@ -1,8 +1,8 @@
 // src/routes/permission.routes.js
 import express from "express";
 import permissionController from "../controllers/permission.controller.js";
-import { authenticateJWT, authorize } from "../middlewares/auth.middleware.js";
-
+import { authenticateJWT} from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/role.middleware.js";
 const router = express.Router();
 
 // Admin only routes
