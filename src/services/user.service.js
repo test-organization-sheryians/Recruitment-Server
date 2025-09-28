@@ -1,10 +1,10 @@
 // services/userService.js
-import Joi from "joi";
 import MongoUserRepository from "../repositories/implementations/MongoUserRepository.js";
 import RedisCacheRepository from "../repositories/implementations/RedisCacheRepository.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
+import crypto from "crypto";
 
 const { JWT_SECRET } = config; // ✅ destructuring from default export
 
@@ -28,7 +28,14 @@ class UserService {
 
     await this.cacheRepository.set(
       `user:id:${user._id}`,
-      { id: user._id, email: user.email,  role: user.role, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        phoneNumber: user.phoneNumber,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       3600
     );
     await this.cacheRepository.set(cacheKey, user, 3600);
@@ -36,7 +43,6 @@ class UserService {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
-   
 
     return {
       user: {
@@ -45,7 +51,7 @@ class UserService {
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
-        phoneNumber: user.phoneNumber
+        phoneNumber: user.phoneNumber,
       },
       token,
     };
@@ -81,7 +87,6 @@ class UserService {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
-  
 
     return {
       user: {
@@ -135,6 +140,48 @@ class UserService {
       role: user.role,
       name: user.name,
     };
+  }
+  async forgotPassword(email) {
+    const user = await this.userRepository.findUserByEmail(email);
+    if (!user)
+      throw new AppError(
+        "If email is registered, a reset link will be sent",
+        200
+      );
+
+    const token = crypto.randomBytes(32).toString("hex");
+    // Hash the token for storage
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const cacheKey = `reset:token:${tokenHash}`;
+
+    // Store token to Redis, expire after 15 mins
+    await this.cacheRepository.set(cacheKey, user._id, 900);
+
+    // TODO: Send email with `token` (for now, return for frontend/testing)
+    // Example reset link: https://your-frontend/reset-password?token=${token}
+
+    return {
+      message: "If email is registered, a reset link will be sent.",
+      token,
+    }; // Remove token in production
+  }
+  async resetPassword(token, newPassword) {
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const cacheKey = `reset:token:${tokenHash}`;
+    const userId = await this.cacheRepository.get(cacheKey);
+
+    if (!userId) throw new AppError("Reset token is invalid or expired", 400);
+
+    const user = await this.userRepository.findUserById(userId);
+    if (!user) throw new AppError("User not found", 404);
+
+    user.password = newPassword;
+    await user.save();
+
+    // Invalidate token
+    await this.cacheRepository.del(cacheKey);
+
+    return { message: "Password reset successful" };
   }
 }
 

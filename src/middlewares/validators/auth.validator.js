@@ -53,6 +53,30 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
+
+// Forgot Password Validator
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "A valid email address is required",
+    "any.required": "Email is required",
+  }),
+});
+
+
+// Reset Password Validator
+const resetPasswordSchema = Joi.object({
+  token: Joi.string().required().messages({
+    "any.required": "Reset token is required",
+  }),
+  password: Joi.string().min(4).required().messages({
+    "string.min": "Password must be at least 4 characters long",
+    "any.required": "Password is required",
+  }),
+});
+
+
 // ✅ Export middlewares
 export const registerValidator = validate(registerSchema);
 export const loginValidator = validate(loginSchema);
+export const forgotPasswordValidator = validate(forgotPasswordSchema);
+export const resetPasswordValidator = validate(resetPasswordSchema);

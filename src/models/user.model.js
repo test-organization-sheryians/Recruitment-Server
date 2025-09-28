@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
-  phoneNumber:{
+  phoneNumber: {
     type: String,
   },
   password: {
@@ -36,13 +36,21 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  roleId:{
+  roleId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
   },
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null,
   },
 });
 

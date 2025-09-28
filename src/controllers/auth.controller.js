@@ -12,12 +12,13 @@ class AuthController {
     try {
       const userData = req.body;
       const result = await this.userService.register(userData);
- res.cookie("token", result.token, {
-      httpOnly: true,
-      secure: true,      // true if using HTTPS
-      sameSite: "none",  // or "lax" depending on frontend
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });      res.status(201).json({ success: true, data: result });
+      res.cookie("token", result.token, {
+        httpOnly: true,
+        secure: true, // true if using HTTPS
+        sameSite: "none", // or "lax" depending on frontend
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+      res.status(201).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -27,12 +28,13 @@ class AuthController {
     try {
       const { email, password } = req.body;
       const result = await this.userService.login({ email, password });
- res.cookie("token", result.token, {
-      httpOnly: true,
-      secure: true,      // true if using HTTPS
-      sameSite: "none",  // or "lax" depending on frontend
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });      res.status(200).json({ success: true, data: result });
+      res.cookie("token", result.token, {
+        httpOnly: true,
+        secure: true, // true if using HTTPS
+        sameSite: "none", // or "lax" depending on frontend
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -58,7 +60,25 @@ class AuthController {
       next(error);
     }
   };
+  forgotPassword = async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      const result = await this.userService.forgotPassword(email);
+      // In real scenario, result would contain message like "Email sent"
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+  resetPassword = async (req, res, next) => {
+    try {
+      const { token, password } = req.body;
+      const result = await this.userService.resetPassword(token, password);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
-
 // Export a single instance
 export default new AuthController();
