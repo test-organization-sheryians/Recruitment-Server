@@ -5,6 +5,7 @@ import roleRoutes from "./routes/role.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
 import errorHandler from './middlewares/errorHandler.middleware.js';
 import cookieParser from "cookie-parser";
+import aiRoutes from './routes/ai.routes.js'
 const app = express();
 
 // Middleware to parse JSON bodies
