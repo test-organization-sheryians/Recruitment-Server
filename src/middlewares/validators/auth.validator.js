@@ -1,7 +1,7 @@
 import Joi from "joi";
 import { AppError } from "../../utils/errors.js";
 
-// ✅ Register schema
+//Register schema
 const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "A valid email address is required",
@@ -11,8 +11,7 @@ const registerSchema = Joi.object({
     "string.min": "Password must be at least 4 characters long",
     "any.required": "Password is required",
   }),
-  role: Joi.string().valid("Admin", "Candidate", "Client").required().messages({
-    "any.only": "Role must be either Admin, Candidate, or Client",
+  roleId: Joi.string().required().messages({
     "any.required": "Role is required",
   }),
   firstName: Joi.string().required().messages({
@@ -32,7 +31,7 @@ phoneNumber: Joi.string()
  
 });
 
-// ✅ Login schema
+//Login schema
 const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "A valid email address is required",
@@ -43,7 +42,7 @@ const loginSchema = Joi.object({
   }),
 });
 
-// ✅ Middleware wrapper
+//Middleware wrapper
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -53,6 +52,6 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-// ✅ Export middlewares
+//Export middlewares
 export const registerValidator = validate(registerSchema);
 export const loginValidator = validate(loginSchema);

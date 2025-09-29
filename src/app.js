@@ -1,5 +1,8 @@
 import express from "express";
-import router from './routes/users.js '
+import userRoutes from './routes/user.routes.js '
+import authRoutes from './routes/auth.routes.js'
+import roleRoutes from "./routes/role.routes.js";
+import permissionRoutes from "./routes/permission.routes.js";
 import errorHandler from './middlewares/errorHandler.middleware.js';
 import cookieParser from "cookie-parser";
 const app = express();
@@ -7,13 +10,13 @@ const app = express();
 // Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());
-// Mount all routes under /api
-app.use("/api/users", router);
 
-// only for testing remove it if you want
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+// Mount all routes under /api
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/roles", roleRoutes);
+app.use("/api/permissions", permissionRoutes);
+
 
 // Error Handler (after routes)
 app.use(errorHandler);
