@@ -27,7 +27,7 @@ class AuthController {
     try {
       const { email, password } = req.body;
       const result = await this.userService.login({ email, password });
- res.cookie("token", result.token, {
+     res.cookie("token", result.token, {
       httpOnly: true,
       secure: true,      // true if using HTTPS
       sameSite: "none",  // or "lax" depending on frontend
