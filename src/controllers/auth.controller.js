@@ -1,10 +1,14 @@
 // src/controllers/auth.controller.js
 import UserService from "../services/user.service.js";
+import AuthService from "../services/auth.service.js";
+import { redisClient } from "../config/redis.js";
+
 import { AppError } from "../utils/errors.js";
 
 class AuthController {
   constructor() {
     this.userService = new UserService();
+     this.authService = new AuthService();
   }
 
   // Arrow functions automatically bind `this`
@@ -59,6 +63,37 @@ class AuthController {
     }
   };
 }
+
+logout = async (req, res, next) => {
+    try {
+      const token =
+        req.cookies?.token || req.header("Authorization")?.replace("Bearer ", "");
+
+      if (token) {
+        // Verify token to extract user info
+        const decoded = this.authService.verifyToken(token);
+
+        // Store token in Redis blacklist until it expires
+        const exp = decoded.exp * 1000; // expiry timestamp in ms
+        const ttl = Math.floor((exp - Date.now()) / 1000); // seconds left
+        if (ttl > 0) {
+          await redisClient.setEx(`bl_${token}`, ttl, "blacklisted");
+        }
+      }
+
+      // Clear the cookie
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      });
+
+      res.status(200).json({ success: true, message: "Logged out successfully" });
+    } catch (error) {
+      next(error);
+    }
+  
+};
 
 // Export a single instance
 export default new AuthController();
