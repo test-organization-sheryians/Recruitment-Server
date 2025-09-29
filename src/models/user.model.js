@@ -30,6 +30,10 @@
       type: String,
       required: true,
     },
+      refreshToken: { 
+        type: String
+       },
+
     googleId: {
       type: String,
     }

@@ -8,5 +8,6 @@ const router = express.Router();
 // Public auth endpoints
 router.post("/register", registerValidator, authController.register);
 router.post("/login", loginValidator, authController.login);
+router.post("/refresh", authController.refreshTokenController);
 
 export default router;

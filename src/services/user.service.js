@@ -13,7 +13,19 @@ class UserService {
   constructor() {
     this.userRepository = new MongoUserRepository();
     this.cacheRepository = new RedisCacheRepository();
-    }
+  }
+  // ...............................saving refresh token in cache........................
+
+  async saveRefreshToken(userId, refreshToken) {
+    // store refresh token in Redis with user id
+    await this.cacheRepository.set(
+      `refresh:${userId}`,
+      refreshToken,
+      7 * 24 * 3600
+    );
+  }
+
+  // ..........................resgiser...........................
 
   async register(userData) {
     const cacheKey = `user:email:${userData.email}`;
@@ -29,7 +41,14 @@ class UserService {
 
     await this.cacheRepository.set(
       `user:id:${user._id}`,
-      { id: user._id, email: user.email,  role: user.role, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        phoneNumber: user.phoneNumber,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       3600
     );
     await this.cacheRepository.set(cacheKey, user, 3600);
@@ -37,7 +56,13 @@ class UserService {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
-   
+
+    // ...........................refresh token........................
+
+    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+      expiresIn: config.REFRESH_EXPIRES_IN,
+    });
+    await this.saveRefreshToken(user._id, refreshToken);
 
     return {
       user: {
@@ -46,16 +71,17 @@ class UserService {
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
-        phoneNumber: user.phoneNumber
+        phoneNumber: user.phoneNumber,
       },
       token,
+      refreshToken,
     };
   }
 
   async login({ email, password }) {
     const cacheKey = `user:email:${email}`;
     let user = await this.cacheRepository.get(cacheKey);
-    logger.info("user from cache",user);
+    logger.info("user from cache", user);
     if (user) {
       // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
       user.comparePassword = async function (password) {
@@ -65,7 +91,7 @@ class UserService {
     } else {
       user = await this.userRepository.findUserByEmail(email);
       if (!user) throw new AppError("Invalid credentials", 401);
-    logger.info("user from user service",user);
+      logger.info("user from user service", user);
       // Cache me store
       await this.cacheRepository.set(
         cacheKey,
@@ -83,7 +109,13 @@ class UserService {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
-  
+
+    // ...........................refresh token........................
+
+    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+      expiresIn: config.REFRESH_EXPIRES_IN,
+    });
+    await this.saveRefreshToken(user._id, refreshToken);
 
     return {
       user: {
@@ -93,7 +125,38 @@ class UserService {
         name: user.name,
       },
       token,
+      refreshToken,
     };
+  }
+  // ................................refresh........................
+  async refresh(refreshToken) {
+    if (!refreshToken) throw new AppError("Unauthorized", 401);
+
+    try {
+      const payload = jwt.verify(refreshToken, REFRESH_SECRET);
+
+      const stored = await this.cacheRepository.get(`refresh:${payload.id}`);
+      if (!stored || stored !== refreshToken)
+        throw new AppError("Unauthorized", 401);
+
+      const token = jwt.sign(
+        { id: payload.id, role: payload.role },
+        JWT_SECRET,
+        { expiresIn: ACCESS_EXPIRES_IN }
+      );
+
+      // generate new refresh token
+      const newRefreshToken = jwt.sign({ id: payload.id }, REFRESH_SECRET, {
+        expiresIn: REFRESH_EXPIRES_IN,
+      });
+
+      // save new refresh token in cache
+      await this.saveRefreshToken(payload.id, newRefreshToken);
+
+      return { token, refreshToken: newRefreshToken };
+    } catch (err) {
+      throw new AppError("Invalid refresh token", 401);
+    }
   }
 
   async getUser(id) {
@@ -161,7 +224,11 @@ class UserService {
 
       await this.cacheRepository.set(cacheKey, payload, 3600);
       // also maintain email index for quick lookups
-      await this.cacheRepository.set(`user:email:${user.email}`, { ...payload, password: user.password }, 3600);
+      await this.cacheRepository.set(
+        `user:email:${user.email}`,
+        { ...payload, password: user.password },
+        3600
+      );
 
       return payload;
     }
@@ -180,9 +247,12 @@ class UserService {
   async updateMe(userId, updates) {
     if (!userId) throw new AppError("Unauthorized", 401);
 
-    const { error, value } = updateMeSchema.validate(updates, { abortEarly: false, stripUnknown: true });
+    const { error, value } = updateMeSchema.validate(updates, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
     if (error) {
-      throw new AppError(error.details.map(d => d.message).join(", "), 400);
+      throw new AppError(error.details.map((d) => d.message).join(", "), 400);
     }
 
     // Persist update
@@ -205,7 +275,9 @@ class UserService {
     // Refresh email cache
     // First, fetch previous email from cache or DB to invalidate old key if email changed
     const previousById = await this.cacheRepository.get(`user:id:${userId}`);
-    const oldEmailKey = previousById?.email ? `user:email:${previousById.email}` : null;
+    const oldEmailKey = previousById?.email
+      ? `user:email:${previousById.email}`
+      : null;
 
     // Store new email mapping with password for login path optimization if desired
     await this.cacheRepository.set(
