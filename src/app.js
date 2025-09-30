@@ -1,10 +1,11 @@
 import express from "express";
-import userRoutes from './routes/user.routes.js '
-import authRoutes from './routes/auth.routes.js'
+import userRoutes from "./routes/user.routes.js ";
+import authRoutes from "./routes/auth.routes.js";
 import roleRoutes from "./routes/role.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
-import errorHandler from './middlewares/errorHandler.middleware.js';
+import errorHandler from "./middlewares/errorHandler.middleware.js";
 import cookieParser from "cookie-parser";
+import jobCategoryRoutes from "./routes/jobCategory.routes.js";
 const app = express();
 
 // Middleware to parse JSON bodies
@@ -16,7 +17,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/permissions", permissionRoutes);
-
+app.use("/api/job-categories", jobCategoryRoutes);
 
 // Error Handler (after routes)
 app.use(errorHandler);
