@@ -1,7 +1,7 @@
 import Joi from "joi";
 import { AppError } from "../../utils/errors.js";
 
-//Register schema
+// Register schema
 const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "A valid email address is required",
@@ -20,18 +20,16 @@ const registerSchema = Joi.object({
   lastName: Joi.string().required().messages({
     "any.required": "Last name is required",
   }),
-phoneNumber: Joi.string()
-  .min(10)
-  .required()
-  .messages({
-    "string.min": "Phone number must be at least 10 digits long",
-    "any.required": "Phone number is required",
-  }),
-
- 
+  phoneNumber: Joi.string()
+    .min(10)
+    .required()
+    .messages({
+      "string.min": "Phone number must be at least 10 digits long",
+      "any.required": "Phone number is required",
+    }),
 });
 
-//Login schema
+// Login schema
 const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "A valid email address is required",
@@ -42,16 +40,27 @@ const loginSchema = Joi.object({
   }),
 });
 
-//Middleware wrapper
+// Reset Password schema using Joi
+const resetPasswordSchema = Joi.object({
+  oldPassword: Joi.string().required().messages({
+    "any.required": "Old password is required",
+    "string.empty": "Old password is required",
+  }),
+  newPassword: Joi.string().required().messages({
+    "any.required": "New password is required",
+    "string.empty": "New password is required",
+  }),
+});
+
+// Middleware wrapper
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
-    // Collect all errors as a single message
     return next(new AppError(error.details.map((d) => d.message).join(", "), 400));
   }
   next();
 };
 
-//Export middlewares
 export const registerValidator = validate(registerSchema);
 export const loginValidator = validate(loginSchema);
+export const resetPasswordValidator = validate(resetPasswordSchema);

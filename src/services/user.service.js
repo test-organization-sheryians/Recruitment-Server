@@ -6,6 +6,9 @@ import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import logger from "../utils/logger.js";
+import User from "../models/user.model.js";
+import bcrypt from "bcryptjs";
+
 
 const { JWT_SECRET } = config; //destructuring from default export
 
@@ -220,6 +223,28 @@ class UserService {
 
     return shaped;
   }
+
+async resetPassword(userId, oldPassword, newPassword) {
+    // 1. Fetch user with hashed password (project only password)
+    const user = await User.findById(userId).select("+password").exec();
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // 2. Compare old password with stored hash
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new Error("Old password is incorrect");
+    }
+
+    // 3. Hash new password (use saltRounds=12 for strong security)
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    // 4. Update password and save
+    user.password = hashed;
+    await user.save();
+  }
+
 }
 
 export default UserService;
