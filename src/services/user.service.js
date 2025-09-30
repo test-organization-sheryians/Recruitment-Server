@@ -6,6 +6,7 @@ import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import logger from "../utils/logger.js";
+import mongoose from "mongoose";
 
 const { JWT_SECRET } = config; //destructuring from default export
 
@@ -13,7 +14,7 @@ class UserService {
   constructor() {
     this.userRepository = new MongoUserRepository();
     this.cacheRepository = new RedisCacheRepository();
-    }
+  }
 
   async register(userData) {
     const cacheKey = `user:email:${userData.email}`;
@@ -29,7 +30,7 @@ class UserService {
 
     await this.cacheRepository.set(
       `user:id:${user._id}`,
-      { id: user._id, email: user.email,  role: user.role, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
+      { id: user._id, email: user.email, role: user.role, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
       3600
     );
     await this.cacheRepository.set(cacheKey, user, 3600);
@@ -37,7 +38,7 @@ class UserService {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
-   
+
 
     return {
       user: {
@@ -55,7 +56,7 @@ class UserService {
   async login({ email, password }) {
     const cacheKey = `user:email:${email}`;
     let user = await this.cacheRepository.get(cacheKey);
-    logger.info("user from cache",user);
+    logger.info("user from cache", user);
     if (user) {
       // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
       user.comparePassword = async function (password) {
@@ -65,7 +66,7 @@ class UserService {
     } else {
       user = await this.userRepository.findUserByEmail(email);
       if (!user) throw new AppError("Invalid credentials", 401);
-    logger.info("user from user service",user);
+      logger.info("user from user service", user);
       // Cache me store
       await this.cacheRepository.set(
         cacheKey,
@@ -83,7 +84,7 @@ class UserService {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
       expiresIn: "1h",
     });
-  
+
 
     return {
       user: {

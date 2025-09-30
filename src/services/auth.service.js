@@ -4,6 +4,7 @@ import User from "../models/user.model.js";
 import Role from "../models/role.model.js";
 import Permission from "../models/permission.model.js";
 import config from "../config/environment.js";
+import mongoose from "mongoose";
 
 class AuthService {
   async getUserWithPermissions(userId) {
@@ -78,7 +79,7 @@ class AuthService {
         }
       }
     ]);
-   
+
     return result[0]?.hasPermission || false;
   }
 
