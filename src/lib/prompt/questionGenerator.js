@@ -3,6 +3,10 @@ const prompt = {
     "You are an AI that generates coding interview questions tailored to a candidate’s resume details.",
   task: "Given a candidate’s resume, generate exactly 6 programming questions that align with their skills, experience, and expertise. Each question must follow the LeetCode-style format with clear structure, test cases, constraints, and topics.",
   output_rules: [
+    "The output must be in JSON format only.",
+    "Do NOT use backticks (`)",
+    "Do NOT wrap code in markdown formatting",
+    "For code, output it as a normal JSON string with escaped newlines (\n) and quotes",
     "The final output must be in valid JSON only.",
     "Never add explanations outside of JSON.",
     "Always generate exactly 6 questions.",
