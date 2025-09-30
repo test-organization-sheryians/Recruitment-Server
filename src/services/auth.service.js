@@ -1,14 +1,23 @@
 // src/services/auth.service.js
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
-import Role from "../models/role.model.js";
-import Permission from "../models/permission.model.js";
 import config from "../config/environment.js";
+
+
 
 class AuthService {
   async getUserWithPermissions(userId) {
+    try {
+      const objectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId)
+      : null;
+      
+    if (!objectId) {
+      throw new Error('Invalid userId provided');
+    }
     const user = await User.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(userId) } },
+      { $match: { _id: objectId } },
       {
         $lookup: {
           from: "roles",
@@ -46,41 +55,62 @@ class AuthService {
       }
     ]);
 
-    return user[0];
+     return user[0];
+  
+    } catch (error) {
+      throw new Error('Error fetching user with permissions');
+    }
   }
 
   async hasPermission(userId, resource, action) {
-    const result = await User.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(userId) } },
-      {
-        $lookup: {
-          from: "permissions",
-          let: { roleId: "$roleId" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$roleId", "$$roleId"] },
-                    { $eq: ["$resource", resource] },
-                    { $eq: ["$action", action] }
-                  ]
+
+    try {
+      // CRITICAL: Add ObjectId validation like getUserWithPermissions
+      const objectId = mongoose.Types.ObjectId.isValid(userId) 
+        ? new mongoose.Types.ObjectId(userId)
+        : null;
+        
+      if (!objectId) {
+        throw new Error('Invalid userId provided');
+      }
+  
+      const result = await User.aggregate([
+        { $match: { _id: objectId } }, // Use validated ObjectId
+        {
+          $lookup: {
+            from: "permissions",
+            let: { roleId: "$roleId" }, // This is correct
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$roleId", "$$roleId"] },
+                      { $eq: ["$resource", resource] },    // Make sure these are strings
+                      { $eq: ["$action", action] }         // Make sure these are strings
+                    ]
+                  }
                 }
               }
-            }
-          ],
-          as: "permission"
+            ],
+            as: "permission"
+          }
+        },
+        {
+          $project: {
+            hasPermission: { $gt: [{ $size: "$permission" }, 0] }
+          }
         }
-      },
-      {
-        $project: {
-          hasPermission: { $gt: [{ $size: "$permission" }, 0] }
-        }
-      }
-    ]);
-   
-    return result[0]?.hasPermission || false;
+      ]);
+  
+      return result[0]?.hasPermission || false;
+      
+    } catch (error) {
+      console.error('Error in hasPermission:', error);
+      throw new Error(`Error checking permission: ${error.message}`);
+    }
   }
+  
 
   generateToken(userId, roleId) {
     return jwt.sign({ userId, roleId }, config.JWT_SECRET, { expiresIn: "24h" });

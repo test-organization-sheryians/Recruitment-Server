@@ -1,11 +1,10 @@
 // services/userService.js
-import Joi from "joi";
 import MongoUserRepository from "../repositories/implementations/MongoUserRepository.js";
 import RedisCacheRepository from "../repositories/implementations/RedisCacheRepository.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
-import logger from "../utils/logger.js";
+import bcrypt from "bcryptjs";
 
 const { JWT_SECRET } = config; //destructuring from default export
 
@@ -13,7 +12,16 @@ class UserService {
   constructor() {
     this.userRepository = new MongoUserRepository();
     this.cacheRepository = new RedisCacheRepository();
-    }
+  }
+
+  async saveRefreshToken(userId, refreshToken) {
+    // store refresh token in Redis with user id
+    await this.cacheRepository.set(
+      `refresh:${userId}`,
+      refreshToken,
+      7 * 24 * 3600
+    );
+  }
 
   async register(userData) {
     const cacheKey = `user:email:${userData.email}`;
@@ -29,71 +37,148 @@ class UserService {
 
     await this.cacheRepository.set(
       `user:id:${user._id}`,
-      { id: user._id, email: user.email,  role: user.role, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
+      {
+        _id: user._id,
+        email: user.email,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+        phoneNumber: user.phoneNumber,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       3600
     );
     await this.cacheRepository.set(cacheKey, user, 3600);
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+    // ...........................refresh token........................
+
+    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+      expiresIn: config.REFRESH_EXPIRES_IN,
     });
-   
+    await this.saveRefreshToken(user._id, refreshToken);
 
     return {
       user: {
         id: user._id,
         email: user.email,
-        role: user.role,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
         firstName: user.firstName,
         lastName: user.lastName,
-        phoneNumber: user.phoneNumber
+        phoneNumber: user.phoneNumber,
       },
       token,
+      refreshToken,
     };
   }
 
   async login({ email, password }) {
     const cacheKey = `user:email:${email}`;
     let user = await this.cacheRepository.get(cacheKey);
-    logger.info("user from cache",user);
     if (user) {
-      // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
       user.comparePassword = async function (password) {
-        const bcrypt = await import("bcryptjs");
         return bcrypt.compare(password, this.password);
       };
     } else {
       user = await this.userRepository.findUserByEmail(email);
+      console.log(user);
       if (!user) throw new AppError("Invalid credentials", 401);
-    logger.info("user from user service",user);
-      // Cache me store
-      await this.cacheRepository.set(
-        cacheKey,
-        {
-          id: user._id,
-          email: user.email,
-          role: user.role,
-          name: user.name,
-          password: user.password,
-        },
-        3600
-      );
+      await this.cacheRepository.set(cacheKey, user, 3600);
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
+    user.comparePassword = async function (password) {
+      return bcrypt.compare(password, this.password);
+    };
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) throw new AppError("Invalid credentials", 401);
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+      expiresIn: config.REFRESH_EXPIRES_IN,
     });
-  
+    await this.saveRefreshToken(user._id, refreshToken);
 
     return {
       user: {
         id: user._id,
         email: user.email,
-        role: user.role,
-        name: user.name,
+        role: {
+          id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
       },
       token,
+      refreshToken,
     };
+  }
+
+  async refresh(refreshToken) {
+    if (!refreshToken) throw new AppError("Unauthorized", 401);
+
+    try {
+      const payload = jwt.verify(refreshToken, REFRESH_SECRET);
+
+      const stored = await this.cacheRepository.get(`refresh:${payload.id}`);
+      if (!stored || stored !== refreshToken)
+        throw new AppError("Unauthorized", 401);
+
+      const token = jwt.sign(
+        { id: payload.id, role: payload.role },
+        JWT_SECRET,
+        { expiresIn: ACCESS_EXPIRES_IN }
+      );
+
+      // generate new refresh token
+      const newRefreshToken = jwt.sign({ id: payload.id }, REFRESH_SECRET, {
+        expiresIn: REFRESH_EXPIRES_IN,
+      });
+
+      // save new refresh token in cache
+      await this.saveRefreshToken(payload.id, newRefreshToken);
+
+      return { token, refreshToken: newRefreshToken };
+    } catch (err) {
+      throw new AppError("Invalid refresh token", 401);
+    }
   }
 
   async getUser(id) {
@@ -102,11 +187,7 @@ class UserService {
     if (!user) {
       user = await this.userRepository.findUserById(id);
       if (!user) throw new AppError("User not found", 404);
-      await this.cacheRepository.set(
-        cacheKey,
-        { id: user._id, email: user.email, role: user.role, name: user.name },
-        3600
-      );
+      await this.cacheRepository.set(cacheKey, user, 3600);
     }
     return user;
   }
@@ -139,50 +220,15 @@ class UserService {
     };
   }
 
-  async getMe(userId) {
-    if (!userId) throw new AppError("Unauthorized", 401);
-
-    const cacheKey = `user:id:${userId}`;
-    let user = await this.cacheRepository.get(cacheKey);
-
-    if (!user) {
-      user = await this.userRepository.findUserById(userId);
-      if (!user) throw new AppError("User not found", 404);
-
-      // Cache a safe, compact shape
-      const payload = {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phoneNumber: user.phoneNumber,
-      };
-
-      await this.cacheRepository.set(cacheKey, payload, 3600);
-      // also maintain email index for quick lookups
-      await this.cacheRepository.set(`user:email:${user.email}`, { ...payload, password: user.password }, 3600);
-
-      return payload;
-    }
-
-    // user came from cache; ensure consistent shape
-    return {
-      id: user.id || user._id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phoneNumber: user.phoneNumber,
-    };
-  }
-  // Update the authenticated user's profile
   async updateMe(userId, updates) {
     if (!userId) throw new AppError("Unauthorized", 401);
 
-    const { error, value } = updateMeSchema.validate(updates, { abortEarly: false, stripUnknown: true });
+    const { error, value } = updateMeSchema.validate(updates, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
     if (error) {
-      throw new AppError(error.details.map(d => d.message).join(", "), 400);
+      throw new AppError(error.details.map((d) => d.message).join(", "), 400);
     }
 
     // Persist update
@@ -193,7 +239,6 @@ class UserService {
     const shaped = {
       id: updated._id,
       email: updated.email,
-      role: updated.role,
       firstName: updated.firstName,
       lastName: updated.lastName,
       phoneNumber: updated.phoneNumber,
@@ -205,7 +250,9 @@ class UserService {
     // Refresh email cache
     // First, fetch previous email from cache or DB to invalidate old key if email changed
     const previousById = await this.cacheRepository.get(`user:id:${userId}`);
-    const oldEmailKey = previousById?.email ? `user:email:${previousById.email}` : null;
+    const oldEmailKey = previousById?.email
+      ? `user:email:${previousById.email}`
+      : null;
 
     // Store new email mapping with password for login path optimization if desired
     await this.cacheRepository.set(
@@ -219,6 +266,29 @@ class UserService {
     }
 
     return shaped;
+  }
+
+  async resetPassword(userId, oldPassword, newPassword) {
+    // 1. Fetch user with hashed password (project only password)
+    const user = await this.userRepository.findUserById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // 2. Compare old password with stored hash
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new Error("Old password is incorrect");
+    }
+
+    // 3. Hash new password (use saltRounds=12 for strong security)
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // 4. Update password and save
+    await this.userRepository.updateUser(userId, { password: hashed });
+    await this.cacheRepository.del(`user:id:${userId}`);
+    await this.cacheRepository.del(`user:email:${user.email}`);
+    return true;
   }
 }
 

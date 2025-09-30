@@ -1,4 +1,3 @@
-// src/controllers/role.controller.js
 import RoleService from "../services/role.service.js";
 
 class RoleController {

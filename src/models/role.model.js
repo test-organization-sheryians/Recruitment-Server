@@ -1,4 +1,3 @@
-// src/models/role.model.js
 import mongoose from "mongoose";
 
 const roleSchema = new mongoose.Schema({

@@ -1,4 +1,3 @@
-// contracts/IUserRepository.js
 class IUserRepository {
   async createUser(userData) {
     throw new Error("Method not implemented");

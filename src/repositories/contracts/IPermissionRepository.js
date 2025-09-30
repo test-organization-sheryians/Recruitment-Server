@@ -1,4 +1,4 @@
-// src/repositories/contracts/IPermissionRepository.js
+
 class IPermissionRepository {
     async createPermission(permissionData) {
       throw new Error("Method not implemented");
