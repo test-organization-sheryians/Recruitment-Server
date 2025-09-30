@@ -1,4 +1,5 @@
 // repositories/MongoUserRepository.js
+import mongoose from "mongoose";
 import IUserRepository from "../contracts/IUserRepository.js";
 import User from "../../models/user.model.js";
 import { AppError } from "../../utils/errors.js";
@@ -16,7 +17,6 @@ class MongoUserRepository extends IUserRepository {
   async findUserByEmail(email) {
     try {
       const [user] = await User.aggregate([
-        // Normalize email to match how it's stored (lowercase + trimmed by schema)
         {
           $match: { email: email },
         },
@@ -48,10 +48,12 @@ class MongoUserRepository extends IUserRepository {
         // Keep only the fields you need
         {
           $project: {
+            _id: 1,
             email: 1,
             firstName: 1,
             lastName: 1,
             phoneNumber: 1,
+            password: 1,
             googleId: 1,
             role: {
               _id: "$role._id",
@@ -74,7 +76,6 @@ class MongoUserRepository extends IUserRepository {
         // Limit to one result
         { $limit: 1 },
       ]);
-
       return user || null;
     } catch (error) {
       throw new AppError(
@@ -85,14 +86,21 @@ class MongoUserRepository extends IUserRepository {
     }
   }
 
-  async findUserById(id) {
-    try {
-      const [user] = await User.aggregate([
-        // Normalize email to match how it's stored (lowercase + trimmed by schema)
-        {
-          $match: { _id: id },
-        },
-        // Join role
+  async findUserById(id) {    
+    // Check if it's a valid ObjectId
+    const isValid = mongoose.Types.ObjectId.isValid(id);
+    
+    if (!isValid) {
+      console.log('ERROR: Invalid ObjectId format');
+      return null;
+    }
+    
+    // Create ObjectId
+    const objectId = new mongoose.Types.ObjectId(id); 
+    
+    const [user] = await User.aggregate([
+    
+       { $match: { _id: objectId }},
         {
           $lookup: {
             from: "roles", // Mongoose model Role => collection "roles"
@@ -101,7 +109,7 @@ class MongoUserRepository extends IUserRepository {
             as: "role",
           },
         },
-
+        // Unwind single role; if no role, stop result here (or set preserveNull...: true if you want users without roles)
         {
           $unwind: {
             path: "$role",
@@ -117,8 +125,10 @@ class MongoUserRepository extends IUserRepository {
             as: "permissions",
           },
         },
+        // Keep only the fields you need
         {
           $project: {
+            _id: 1,
             email: 1,
             firstName: 1,
             lastName: 1,
@@ -144,12 +154,8 @@ class MongoUserRepository extends IUserRepository {
         },
         // Limit to one result
         { $limit: 1 },
-      ]);
-
-      return user || null;
-    } catch (error) {
-      throw new AppError("Failed to find user by ID", 500, error);
-    }
+    ]);
+    return user;
   }
 
   async updateUser(id, userData) {

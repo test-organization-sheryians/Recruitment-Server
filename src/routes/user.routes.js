@@ -7,10 +7,12 @@ import { updateUserValidator } from "../middlewares/validators/user.validator.js
 
 const router = express.Router();
 
-// Authenticated user profile
-router.get("/me", authenticateJWT, authorize("user", "read"), userController.getMe);
 
-// Update own profile (partial updates)
-router.patch("/me", authenticateJWT, authorize("user", "update"), updateUserValidator, userController.updateMe);
+//Only authentication needed for self-access
+router.get("/me", authenticateJWT, userController.getMe);
+
+//Authorization only for updating (optional)
+router.patch("/me", authenticateJWT, updateUserValidator, userController.updateMe);
+
 
 export default router;

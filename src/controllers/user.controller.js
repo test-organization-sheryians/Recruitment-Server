@@ -13,7 +13,8 @@ class UserController {
   // GET /users/me
   async getMe(req, res, next) {
     try {
-      const userId = req.user?.id;
+   
+      const userId = req.userId;
       const user = await this.userService.getUser(userId);
 
       return res.status(200).json({
@@ -21,7 +22,11 @@ class UserController {
         data: {
           id: user.id || user._id,
           email: user.email,
-          role: user.role,
+          role: {
+            _id: user.role._id,
+            name: user.role.name,
+            description: user.role.description,
+          },
           firstName: user.firstName,
           lastName: user.lastName,
           phoneNumber: user.phoneNumber,

@@ -12,9 +12,8 @@ export const authenticateJWT = async (req, res, next) => {
       throw new AppError("Access denied. No token provided.", 401);
     }
     const decoded = authService.verifyToken(token);
-    req.userId = decoded.userId;
-    req.roleId = decoded.roleId;
-
+    req.userId = decoded.id;
+    req.roleId = decoded.role._id;
     next();
   } catch (error) {
     next(new AppError("Invalid or expired token.", 401));

@@ -14,8 +14,8 @@ class AuthController {
       const result = await this.userService.register(userData);
  res.cookie("token", result.token, {
       httpOnly: true,
-      secure: true,      // true if using HTTPS
-      sameSite: "none",  // or "lax" depending on frontend
+      secure: true,   
+      sameSite: "none",  
       maxAge: 60 * 60 * 1000, // 1 hour
     });      res.status(201).json({ success: true, data: result });
     } catch (error) {

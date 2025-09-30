@@ -13,6 +13,7 @@ export const authorize = (resource, action) => {
         resource,
         action
       );
+      console.log('haspermission',hasPermission);
       if (!hasPermission) {
         throw new AppError("Access denied. Insufficient permissions.", 403);
       }
