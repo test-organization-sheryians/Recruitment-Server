@@ -9,6 +9,7 @@ import jobRoleRoutes from "./routes/jobRole.routes.js";
 import errorHandler from './middlewares/errorHandler.middleware.js';
 import cookieParser from "cookie-parser";
 import jobCategoryRoutes from "./routes/jobCategory.routes.js";
+import aiRoutes from './routes/ai.routes.js'
 const app = express();
 
 
@@ -45,8 +46,7 @@ app.use("/api/permissions",permissionRoutes);
 app.use("/api/jobs",jobRoleRoutes);
 app.use("/api/job-categories", jobCategoryRoutes);
 app.use("/api/skills", skillRoutes);
-
-
+app.use("/api/ai", aiRoutes);
 
 app.use(errorHandler);
 
