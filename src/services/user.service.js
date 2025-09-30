@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import bcrypt from "bcryptjs";
 
-
 const { JWT_SECRET } = config; //destructuring from default export
 
 class UserService {
@@ -29,23 +28,36 @@ class UserService {
 
     await this.cacheRepository.set(
       `user:id:${user._id}`,
-      { _id: user._id, email: user.email,  role: {
-        _id: user.role._id,
-        name: user.role.name,
-        description: user.role.description
-      }, phoneNumber: user.phoneNumber, firstName: user.firstName, lastName: user.lastName },
+      {
+        _id: user._id,
+        email: user.email,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+        phoneNumber: user.phoneNumber,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       3600
     );
     await this.cacheRepository.set(cacheKey, user, 3600);
 
-    const token = jwt.sign({ id: user._id, role: {
-      _id: user.role._id,
-      name: user.role.name,
-      description: user.role.description
-    } }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     return {
       user: {
@@ -54,11 +66,11 @@ class UserService {
         role: {
           _id: user.role._id,
           name: user.role.name,
-          description: user.role.description
+          description: user.role.description,
         },
         firstName: user.firstName,
         lastName: user.lastName,
-        phoneNumber: user.phoneNumber
+        phoneNumber: user.phoneNumber,
       },
       token,
     };
@@ -69,15 +81,15 @@ class UserService {
     let user = await this.cacheRepository.get(cacheKey);
     if (user) {
       // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
-      user.comparePassword = async function (password) {   
+      user.comparePassword = async function (password) {
         return bcrypt.compare(password, this.password);
       };
     } else {
       user = await this.userRepository.findUserByEmail(email);
-      console.log(user)
+      console.log(user);
       if (!user) throw new AppError("Invalid credentials", 401);
       // Cache me store
-      await this.cacheRepository.set(cacheKey,user,3600);
+      await this.cacheRepository.set(cacheKey, user, 3600);
     }
 
     user.comparePassword = async function (password) {
@@ -87,14 +99,20 @@ class UserService {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) throw new AppError("Invalid credentials", 401);
 
-    const token = jwt.sign({ id: user._id, role: {
-      _id: user.role._id,
-      name: user.role.name,
-      description: user.role.description
-    }}, JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description,
+        },
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     return {
       user: {
@@ -103,13 +121,13 @@ class UserService {
         role: {
           id: user.role._id,
           name: user.role.name,
-          description: user.role.description
+          description: user.role.description,
         },
         firstName: user.firstName,
         lastName: user.lastName,
-        phoneNumber: user.phoneNumber
+        phoneNumber: user.phoneNumber,
       },
-      token
+      token,
     };
   }
 
@@ -119,11 +137,7 @@ class UserService {
     if (!user) {
       user = await this.userRepository.findUserById(id);
       if (!user) throw new AppError("User not found", 404);
-      await this.cacheRepository.set(
-        cacheKey,
-        user,
-        3600
-      );
+      await this.cacheRepository.set(cacheKey, user, 3600);
     }
     return user;
   }
@@ -156,13 +170,15 @@ class UserService {
     };
   }
 
-
   async updateMe(userId, updates) {
     if (!userId) throw new AppError("Unauthorized", 401);
 
-    const { error, value } = updateMeSchema.validate(updates, { abortEarly: false, stripUnknown: true });
+    const { error, value } = updateMeSchema.validate(updates, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
     if (error) {
-      throw new AppError(error.details.map(d => d.message).join(", "), 400);
+      throw new AppError(error.details.map((d) => d.message).join(", "), 400);
     }
 
     // Persist update
@@ -184,7 +200,9 @@ class UserService {
     // Refresh email cache
     // First, fetch previous email from cache or DB to invalidate old key if email changed
     const previousById = await this.cacheRepository.get(`user:id:${userId}`);
-    const oldEmailKey = previousById?.email ? `user:email:${previousById.email}` : null;
+    const oldEmailKey = previousById?.email
+      ? `user:email:${previousById.email}`
+      : null;
 
     // Store new email mapping with password for login path optimization if desired
     await this.cacheRepository.set(
@@ -198,6 +216,29 @@ class UserService {
     }
 
     return shaped;
+  }
+
+  async resetPassword(userId, oldPassword, newPassword) {
+    // 1. Fetch user with hashed password (project only password)
+    const user = await this.userRepository.findUserById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // 2. Compare old password with stored hash
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new Error("Old password is incorrect");
+    }
+
+    // 3. Hash new password (use saltRounds=12 for strong security)
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // 4. Update password and save
+    await this.userRepository.updateUser(userId, { password: hashed });
+    await this.cacheRepository.del(`user:id:${userId}`);
+    await this.cacheRepository.del(`user:email:${user.email}`);
+    return true;    
   }
 }
 

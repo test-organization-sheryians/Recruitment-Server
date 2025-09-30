@@ -130,6 +130,7 @@ class MongoUserRepository extends IUserRepository {
           $project: {
             _id: 1,
             email: 1,
+            password: 1,
             firstName: 1,
             lastName: 1,
             phoneNumber: 1,

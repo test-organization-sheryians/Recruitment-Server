@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import config from "../config/environment.js";
-import mongoose from "mongoose";
+
 
 
 class AuthService {
