@@ -13,4 +13,6 @@ export default {
   REFRESH_SECRET: process.env.REFRESH_SECRET,
   REFRESH_EXPIRES_IN: process.env.REFRESH_EXPIRES_IN,
   GROQ_API_KEY: process.env.GROQ_API_KEY,
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+  NODE_ENV: process.env.NODE_ENV,
 };
