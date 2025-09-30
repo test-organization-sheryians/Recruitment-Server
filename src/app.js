@@ -1,5 +1,6 @@
 import express from "express";
-import userRoutes from './routes/user.routes.js '
+import cors from "cors"
+import userRoutes from './routes/user.routes.js'
 import authRoutes from './routes/auth.routes.js'
 import roleRoutes from "./routes/role.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
@@ -9,31 +10,29 @@ import cookieParser from "cookie-parser";
 const app = express();
 
 
-const allowedOrigins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://your-frontend.com"
-  ];
-  
-  const corsOptions = {
-    origin(origin, callback) {
-      // allow REST clients or same-origin requests without Origin header
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Content-Length", "Content-Type"],
-    credentials: true,
-    maxAge: 600 // cache preflight for 10 minutes
-  };
+const AllowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+
+export const corsOptions = {
+  origin: function (origin, callback) {
+    if (
+      AllowedOrigins.indexOf(origin) !== -1 ||
+      (process.env.NODE_ENV === "development" && !origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+};
 
 // Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+
 
 
 
