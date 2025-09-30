@@ -1,5 +1,3 @@
-// src/repositories/implementation/mongoJobCategoryRepository.js
-
 import IJobCategoryRepository from "../contracts/IJobCategoryRepository.js";
 import JobCategory from "../../models/jobCategory.model.js";
 

@@ -1,8 +1,6 @@
-// src/middlewares/validators/jobRole.validator.js
 import Joi from "joi";
 import { AppError } from "../../utils/errors.js";
 
-// Create Job Role schema
 const createJobRoleSchema = Joi.object({
   title: Joi.string().min(3).max(100).required().messages({
     "string.min": "Title must be at least 3 characters long",
@@ -47,7 +45,6 @@ const createJobRoleSchema = Joi.object({
   }),
 });
 
-// Update Job Role schema
 const updateJobRoleSchema = Joi.object({
   title: Joi.string().min(3).max(100).messages({
     "string.min": "Title must be at least 3 characters long",
@@ -84,7 +81,6 @@ const updateJobRoleSchema = Joi.object({
   }),
 });
 
-// Filter Job Roles schema
 const filterJobRolesSchema = Joi.object({
   clientId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
     "string.pattern.base": "Client ID must be a valid ObjectId",
@@ -101,7 +97,6 @@ const filterJobRolesSchema = Joi.object({
   }),
 });
 
-// Middleware wrapper
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -112,7 +107,6 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-// Query validation middleware
 const validateQuery = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.query, { abortEarly: false });
   if (error) {
@@ -123,7 +117,6 @@ const validateQuery = (schema) => (req, res, next) => {
   next();
 };
 
-// Export validators
 export const createJobRoleValidator = validate(createJobRoleSchema);
 export const updateJobRoleValidator = validate(updateJobRoleSchema);
 export const filterJobRolesValidator = validateQuery(filterJobRolesSchema);

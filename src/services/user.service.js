@@ -14,6 +14,15 @@ class UserService {
     this.cacheRepository = new RedisCacheRepository();
   }
 
+  async saveRefreshToken(userId, refreshToken) {
+    // store refresh token in Redis with user id
+    await this.cacheRepository.set(
+      `refresh:${userId}`,
+      refreshToken,
+      7 * 24 * 3600
+    );
+  }
+
   async register(userData) {
     const cacheKey = `user:email:${userData.email}`;
     let existingUser = await this.cacheRepository.get(cacheKey);
@@ -58,6 +67,12 @@ class UserService {
         expiresIn: "1h",
       }
     );
+    // ...........................refresh token........................
+
+    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+      expiresIn: config.REFRESH_EXPIRES_IN,
+    });
+    await this.saveRefreshToken(user._id, refreshToken);
 
     return {
       user: {
@@ -73,6 +88,7 @@ class UserService {
         phoneNumber: user.phoneNumber,
       },
       token,
+      refreshToken,
     };
   }
 
@@ -80,7 +96,6 @@ class UserService {
     const cacheKey = `user:email:${email}`;
     let user = await this.cacheRepository.get(cacheKey);
     if (user) {
-      // Redis se aaya plain object, isme comparePassword kaam karega via bcrypt
       user.comparePassword = async function (password) {
         return bcrypt.compare(password, this.password);
       };
@@ -88,7 +103,6 @@ class UserService {
       user = await this.userRepository.findUserByEmail(email);
       console.log(user);
       if (!user) throw new AppError("Invalid credentials", 401);
-      // Cache me store
       await this.cacheRepository.set(cacheKey, user, 3600);
     }
 
@@ -114,6 +128,11 @@ class UserService {
       }
     );
 
+    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+      expiresIn: config.REFRESH_EXPIRES_IN,
+    });
+    await this.saveRefreshToken(user._id, refreshToken);
+
     return {
       user: {
         id: user._id,
@@ -128,7 +147,38 @@ class UserService {
         phoneNumber: user.phoneNumber,
       },
       token,
+      refreshToken,
     };
+  }
+
+  async refresh(refreshToken) {
+    if (!refreshToken) throw new AppError("Unauthorized", 401);
+
+    try {
+      const payload = jwt.verify(refreshToken, REFRESH_SECRET);
+
+      const stored = await this.cacheRepository.get(`refresh:${payload.id}`);
+      if (!stored || stored !== refreshToken)
+        throw new AppError("Unauthorized", 401);
+
+      const token = jwt.sign(
+        { id: payload.id, role: payload.role },
+        JWT_SECRET,
+        { expiresIn: ACCESS_EXPIRES_IN }
+      );
+
+      // generate new refresh token
+      const newRefreshToken = jwt.sign({ id: payload.id }, REFRESH_SECRET, {
+        expiresIn: REFRESH_EXPIRES_IN,
+      });
+
+      // save new refresh token in cache
+      await this.saveRefreshToken(payload.id, newRefreshToken);
+
+      return { token, refreshToken: newRefreshToken };
+    } catch (err) {
+      throw new AppError("Invalid refresh token", 401);
+    }
   }
 
   async getUser(id) {
@@ -238,7 +288,7 @@ class UserService {
     await this.userRepository.updateUser(userId, { password: hashed });
     await this.cacheRepository.del(`user:id:${userId}`);
     await this.cacheRepository.del(`user:email:${user.email}`);
-    return true;    
+    return true;
   }
 }
 

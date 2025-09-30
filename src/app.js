@@ -30,7 +30,7 @@ export const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE"],
 };
 
-// Middleware to parse JSON bodies
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(corsOptions));
@@ -38,7 +38,6 @@ app.use(cors(corsOptions));
 
 
 
-// Mount all routes under /api
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
@@ -48,7 +47,7 @@ app.use("/api/job-categories", jobCategoryRoutes);
 app.use("/api/skills", skillRoutes);
 
 
-// Error Handler (after routes)
+
 app.use(errorHandler);
 
 export default app;

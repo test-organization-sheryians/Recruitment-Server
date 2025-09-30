@@ -1,4 +1,3 @@
-// repositories/RedisCacheRepository.js
 import ICacheRepository from "../contracts/ICacheRepository.js";
 import { redisClient } from "../../config/redis.js";
 import { AppError } from "../../utils/errors.js";

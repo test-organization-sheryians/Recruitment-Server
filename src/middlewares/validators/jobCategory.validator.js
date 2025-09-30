@@ -1,7 +1,5 @@
-// src/validators/jobCategoryValidator.js
-
 import Joi from "joi";
-import { AppError } from "../../utils/errors.js";  // adjust path if needed
+import { AppError } from "../../utils/errors.js";  
 
 const jobCategorySchema = Joi.object({
   name: Joi.string().trim().min(2).max(62).required().messages({
@@ -22,17 +20,16 @@ const updateJobCategorySchema = Joi.object({
   }),
 });
 
-// Middleware wrapper factory for validation
+
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
-    // Combine all messages into one string separated by commas
     const message = error.details.map((d) => d.message).join(", ");
     return next(new AppError(message, 400));
   }
   next();
 };
 
-// Export middleware functions
+
 export const createJobCategoryValidator = validate(jobCategorySchema);
 export const updateJobCategoryValidator = validate(updateJobCategorySchema);

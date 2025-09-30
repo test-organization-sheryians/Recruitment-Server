@@ -1,4 +1,3 @@
-// src/repositories/implementations/mongoPermissionRepository.js
 import IPermissionRepository from "../contracts/IPermissionRepository.js";
 import Permission from "../../models/permission.model.js";
 import User from "../../models/user.model.js";

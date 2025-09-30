@@ -1,4 +1,3 @@
-// src/models/permission.model.js
 import mongoose from "mongoose";
 
 const permissionSchema = new mongoose.Schema({
@@ -22,7 +21,6 @@ const permissionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index for efficient permission lookups
 permissionSchema.index({ resource: 1, action: 1, roleId: 1 });
 
 export default mongoose.model("Permission", permissionSchema);

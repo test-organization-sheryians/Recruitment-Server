@@ -1,5 +1,3 @@
-// src/models/jobCategory.js
-
 import mongoose from "mongoose";
 
 const jobCategorySchema = new mongoose.Schema(

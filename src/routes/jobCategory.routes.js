@@ -1,5 +1,3 @@
-// src/routes/jobCategoryRoutes.js
-
 import express from "express";
 import jobCategoryController from "../controllers/jobCategory.controller.js";
 import { authenticateJWT } from "../middlewares/auth.middleware.js";
@@ -13,29 +11,28 @@ const router = express.Router();
 
 router.use(authenticateJWT);
 
-// CREATE (admin only) with validation
 router.post(
   "/",
-  authorize("jobs","create"),
-  createJobCategoryValidator, // <-- validation middleware
+  authorize("jobs", "create"),
+  createJobCategoryValidator,
   jobCategoryController.create
 );
 
-// LIST ALL (public)
 router.get("/", jobCategoryController.list);
 
-// GET ONE (public)
 router.get("/:id", jobCategoryController.get);
 
-// UPDATE (admin only) with validation
 router.put(
   "/:id",
-  authorize("jobs","update"),
-  updateJobCategoryValidator, // <-- validation middleware
+  authorize("jobs", "update"),
+  updateJobCategoryValidator,
   jobCategoryController.update
 );
 
-// DELETE (admin only)
-router.delete("/:id", authorize("jobs","delete"), jobCategoryController.delete);
+router.delete(
+  "/:id",
+  authorize("jobs", "delete"),
+  jobCategoryController.delete
+);
 
 export default router;

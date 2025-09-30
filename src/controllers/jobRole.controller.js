@@ -1,4 +1,3 @@
-// src/controllers/jobRole.controller.js
 import JobRoleService from "../services/jobRole.service.js";
 
 class JobRoleController {
@@ -8,7 +7,6 @@ class JobRoleController {
 
   createJobRole = async (req, res, next) => {
     try {
-      // Add createdBy from authenticated user
       const jobRoleData = {
         ...req.body,
         createdBy: req.userId

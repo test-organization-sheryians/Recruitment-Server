@@ -1,4 +1,3 @@
-// middlewares/validators/user.validator.js
 import Joi from "joi";
 import { AppError } from "../../utils/errors.js";
 
@@ -18,8 +17,7 @@ export const updateUserSchema = Joi.object({
   phoneNumber: Joi.string().min(10).messages({
     "string.min": "Phone number must be at least 10 digits long",
   }),
-  // Intentionally omit 'role' so users can't escalate privileges via this route
-}).min(1); // At least one field required
+}).min(1); 
 
 const validate = (schema) => (req, _res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });

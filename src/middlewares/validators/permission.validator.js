@@ -1,7 +1,6 @@
 import Joi from "joi";
 import { AppError } from "../../utils/errors.js";
 
-//Permission schema
 const permissionSchema = Joi.object({
   resource: Joi.string().required().messages({
     "any.required": "Resource name is required",
@@ -18,7 +17,6 @@ const permissionSchema = Joi.object({
   }),
 });
 
-//Middleware wrapper
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -29,5 +27,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-//Export middleware
 export const permissionValidator = validate(permissionSchema);

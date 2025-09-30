@@ -1,4 +1,3 @@
-// src/repositories/implementations/mongoRoleRepository.js
 import IRoleRepository from "../contracts/IRoleRepository.js";
 import Role from "../../models/role.model.js";
 import { AppError } from "../../utils/errors.js";

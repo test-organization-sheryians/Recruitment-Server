@@ -1,4 +1,3 @@
-// src/models/jobRole.model.js
 import mongoose from "mongoose";
 
 const jobRoleSchema = new mongoose.Schema({
@@ -54,7 +53,6 @@ const jobRoleSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound indexes for better query performance
 jobRoleSchema.index({ clientId: 1, title: 1 });
 jobRoleSchema.index({ category: 1, expiry: 1 });
 jobRoleSchema.index({ createdAt: -1 });

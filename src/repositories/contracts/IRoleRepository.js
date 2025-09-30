@@ -1,4 +1,3 @@
-// src/repositories/contracts/IRoleRepository.js
 class IRoleRepository {
     async createRole(roleData) {
       throw new Error("Method not implemented");

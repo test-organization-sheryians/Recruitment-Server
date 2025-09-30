@@ -1,4 +1,3 @@
-// db.js
 import mongoose from "mongoose";
 import config from "./environment.js";
 const { MONGO_URI} = config;

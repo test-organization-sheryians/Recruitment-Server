@@ -1,10 +1,8 @@
-// src/middlewares/role.middleware.js
 import AuthService from "../services/auth.service.js";
 import { AppError } from "../utils/errors.js";
 
 const authService = new AuthService();
 
-//Permission
 export const authorize = (resource, action) => {
   return async (req, res, next) => {
     try {

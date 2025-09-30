@@ -1,7 +1,7 @@
 import Joi from "joi";
 import { AppError } from "../../utils/errors.js";
 
-//Role schema
+
 const roleSchema = Joi.object({
   name: Joi.string().valid("admin", "candidate", "client").required().messages({
     "any.only": "Role name must be either admin, candidate, or client",
@@ -12,7 +12,6 @@ const roleSchema = Joi.object({
   }),
 });
 
-//Middleware wrapper
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -23,5 +22,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-// Export middleware
 export const roleValidator = validate(roleSchema);

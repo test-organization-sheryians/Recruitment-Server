@@ -7,17 +7,13 @@ const { PORT } = config;
 
 async function startServer() {
   try {
-    // 1. Connect to MongoDB
     await connectDB();
 
-    // 2. Connect to Redis
     await connectRedis();
 
-    // 3. Start Express server
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
-
   } catch (error) {
     console.error("Server failed to start:", error);
     process.exit(1);

@@ -1,4 +1,3 @@
-// contracts/IJobCategoryRepository.js
 
 class IJobCategoryRepository {
   async create(categoryData) {

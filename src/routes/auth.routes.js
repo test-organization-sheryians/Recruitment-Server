@@ -5,11 +5,12 @@ import { authenticateJWT } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// Public auth endpoints
+
 router.post("/register", registerValidator, authController.register);
 router.post("/login", loginValidator, authController.login);
+router.post("/refresh", authController.refreshTokenController);
 
-// Protected endpoints
+
 router.post("/logout", authController.logout);
 
 router.put(

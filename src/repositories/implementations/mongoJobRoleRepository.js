@@ -1,4 +1,3 @@
-// src/repositories/implementations/mongoJobRoleRepository.js
 import IJobRoleRepository from "../contracts/IJobRoleRepository.js";
 import JobRole from "../../models/jobRole.model.js";
 import { AppError } from "../../utils/errors.js";
@@ -75,8 +74,6 @@ class MongoJobRoleRepository extends IJobRoleRepository {
   async findAllJobRoles(filter = {}) {
     try {
       const matchStage = {};
-      console.log(filter.title);
-      // Build match conditions
       if (filter.clientId) {
         matchStage.clientId = new mongoose.Types.ObjectId(filter.clientId);
       }

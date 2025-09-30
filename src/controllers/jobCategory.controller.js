@@ -1,5 +1,3 @@
-// src/controllers/jobCategory.controller.js
-
 import JobCategoryService from "../services/jobCategory.service.js";
 
 class JobCategoryController {
@@ -7,7 +5,6 @@ class JobCategoryController {
     this.jobCategoryService = new JobCategoryService();
   }
 
-  // CREATE
   create = async (req, res, next) => {
     try {
       const category = await this.jobCategoryService.createCategory(req.body);
@@ -19,7 +16,6 @@ class JobCategoryController {
     }
   };
 
-  // LIST ALL
   list = async (req, res, next) => {
     try {
       const categories = await this.jobCategoryService.listCategories();
@@ -33,7 +29,6 @@ class JobCategoryController {
     }
   };
 
-  // GET ONE
   get = async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -48,7 +43,6 @@ class JobCategoryController {
     }
   };
 
-  // UPDATE
   update = async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -66,7 +60,6 @@ class JobCategoryController {
     }
   };
 
-  // DELETE
   delete = async (req, res, next) => {
     try {
       const { id } = req.params;

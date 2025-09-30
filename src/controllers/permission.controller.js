@@ -1,4 +1,3 @@
-// src/controllers/permission.controller.js
 import PermissionService from "../services/permission.service.js";
 
 class PermissionController {

@@ -7,7 +7,7 @@ const skillSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        index: true, // Support faster lookups by name
+        index: true, 
     },
 }, {
     timestamps: true,

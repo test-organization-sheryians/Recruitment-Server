@@ -1,4 +1,3 @@
-// src/repositories/contracts/IJobRoleRepository.js
 class IJobRoleRepository {
     async createJobRole(jobRoleData) {
       throw new Error("Method not implemented");
