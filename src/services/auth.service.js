@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import config from "../config/environment.js";
 
+
 class AuthService {
   async getUserWithPermissions(userId) {
     try {
