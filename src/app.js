@@ -3,6 +3,7 @@ import cors from "cors"
 import userRoutes from './routes/user.routes.js'
 import authRoutes from './routes/auth.routes.js'
 import roleRoutes from "./routes/role.routes.js";
+import skillRoutes from "./routes/skill.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
 import jobRoleRoutes from "./routes/jobRole.routes.js";
 import errorHandler from './middlewares/errorHandler.middleware.js';
@@ -44,6 +45,8 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/permissions",permissionRoutes);
 app.use("/api/jobs",jobRoleRoutes);
 app.use("/api/job-categories", jobCategoryRoutes);
+app.use("/api/skills", skillRoutes);
+
 
 // Error Handler (after routes)
 app.use(errorHandler);

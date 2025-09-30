@@ -13,7 +13,7 @@ class UserService {
   constructor() {
     this.userRepository = new MongoUserRepository();
     this.cacheRepository = new RedisCacheRepository();
-    }
+  }
 
   async register(userData) {
     const cacheKey = `user:email:${userData.email}`;
@@ -45,7 +45,7 @@ class UserService {
     } }, JWT_SECRET, {
       expiresIn: "1h",
     });
-   
+
 
     return {
       user: {
@@ -94,7 +94,7 @@ class UserService {
     }}, JWT_SECRET, {
       expiresIn: "1h",
     });
-  
+
 
     return {
       user: {
