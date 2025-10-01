@@ -1,4 +1,3 @@
-// services/userService.js
 import MongoUserRepository from "../repositories/implementations/MongoUserRepository.js";
 import RedisCacheRepository from "../repositories/implementations/RedisCacheRepository.js";
 import { AppError } from "../utils/errors.js";
@@ -6,7 +5,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import bcrypt from "bcryptjs";
 
-const { JWT_SECRET } = config; //destructuring from default export
+const { JWT_SECRET } = config;
 
 class UserService {
   constructor() {
@@ -35,19 +34,24 @@ class UserService {
 
     const user = await this.userRepository.createUser(userData);
 
+    const userWithRole = await this.userRepository.findUserById(user._id)
+    if(!userWithRole) {
+      throw new AppError("Failed to create user", 500)
+    }
+
     await this.cacheRepository.set(
-      `user:id:${user._id}`,
+      `user:id:${userWithRole._id}`,
       {
-        _id: user._id,
-        email: user.email,
+        _id: userWithRole._id,
+        email: userWithRole.email,
         role: {
-          _id: user.role._id,
-          name: user.role.name,
-          description: user.role.description,
+          _id: userWithRole.role._id,
+          name: userWithRole.role.name,
+          description: userWithRole.role.description,
         },
-        phoneNumber: user.phoneNumber,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        phoneNumber: userWithRole.phoneNumber,
+        firstName: userWithRole.firstName,
+        lastName: userWithRole.lastName,
       },
       3600
     );
@@ -55,11 +59,11 @@ class UserService {
 
     const token = jwt.sign(
       {
-        id: user._id,
+        id: userWithRole._id,
         role: {
-          _id: user.role._id,
-          name: user.role.name,
-          description: user.role.description,
+          _id: userWithRole.role._id,
+          name: userWithRole.role.name,
+          description: userWithRole.role.description,
         },
       },
       JWT_SECRET,
@@ -69,23 +73,23 @@ class UserService {
     );
     // ...........................refresh token........................
 
-    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+    const refreshToken = jwt.sign({ id: userWithRole._id }, config.REFRESH_SECRET, {
       expiresIn: config.REFRESH_EXPIRES_IN,
     });
-    await this.saveRefreshToken(user._id, refreshToken);
+    await this.saveRefreshToken(userWithRole._id, refreshToken);
 
     return {
       user: {
-        id: user._id,
-        email: user.email,
+        id: userWithRole._id,
+        email: userWithRole.email,
         role: {
-          _id: user.role._id,
-          name: user.role.name,
-          description: user.role.description,
+          _id: userWithRole.role._id,
+          name: userWithRole.role.name,
+          description: userWithRole.role.description,
         },
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phoneNumber: user.phoneNumber,
+        firstName: userWithRole.firstName,
+        lastName: userWithRole.lastName,
+        phoneNumber: userWithRole.phoneNumber,
       },
       token,
       refreshToken,
@@ -113,13 +117,22 @@ class UserService {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) throw new AppError("Invalid credentials", 401);
 
+    const userWithRole = await this.userRepository.findUserById(user._id);
+
+    if(!userWithRole) {
+      throw new AppError("Failed to authenticate user", 500)
+    }
+
+    await this.cacheRepository.set(`user:id:${userWithRole._id}`, userWithRole, 3600);
+    await this.cacheRepository.set(`user:email:${userWithRole.email}`, userWithRole, 3600);
+
     const token = jwt.sign(
       {
-        id: user._id,
+        id: userWithRole._id,
         role: {
-          _id: user.role._id,
-          name: user.role.name,
-          description: user.role.description,
+          _id: userWithRole.role._id,
+          name: userWithRole.role.name,
+          description: userWithRole.role.description,
         },
       },
       JWT_SECRET,
@@ -128,23 +141,23 @@ class UserService {
       }
     );
 
-    const refreshToken = jwt.sign({ id: user._id }, config.REFRESH_SECRET, {
+    const refreshToken = jwt.sign({ id: userWithRole._id }, config.REFRESH_SECRET, {
       expiresIn: config.REFRESH_EXPIRES_IN,
     });
-    await this.saveRefreshToken(user._id, refreshToken);
+    await this.saveRefreshToken(userWithRole._id, refreshToken);
 
     return {
       user: {
-        id: user._id,
-        email: user.email,
+        id: userWithRole._id,
+        email: userWithRole.email,
         role: {
-          id: user.role._id,
-          name: user.role.name,
-          description: user.role.description,
+          id: userWithRole.role._id,
+          name: userWithRole.role.name,
+          description: userWithRole.role.description,
         },
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phoneNumber: user.phoneNumber,
+        firstName: userWithRole.firstName,
+        lastName: userWithRole.lastName,
+        phoneNumber: userWithRole.phoneNumber,
       },
       token,
       refreshToken,
