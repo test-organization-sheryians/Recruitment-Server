@@ -1,5 +1,5 @@
-import MongoUserRepository from "../repositories/implementations/MongoUserRepository.js";
-import RedisCacheRepository from "../repositories/implementations/RedisCacheRepository.js";
+import MongoUserRepository from "../repositories/implementations/mongoUserRepository.js";
+import RedisCacheRepository from "../repositories/implementations/redisCacheRepository.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
