@@ -1,12 +1,12 @@
 // services/userService.js
-import MongoUserRepository from "../repositories/implementations/MongoUserRepository.js";
+import MongoUserRepository from "../repositories/implementations/mongoUserRepository.js";
 import RedisCacheRepository from "../repositories/implementations/RedisCacheRepository.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import bcrypt from "bcryptjs";
 
-const { JWT_SECRET } = config; //destructuring from default export
+const { JWT_SECRET } = config; 
 
 class UserService {
   constructor() {
@@ -101,7 +101,6 @@ class UserService {
       };
     } else {
       user = await this.userRepository.findUserByEmail(email);
-      console.log(user);
       if (!user) throw new AppError("Invalid credentials", 401);
       await this.cacheRepository.set(cacheKey, user, 3600);
     }
