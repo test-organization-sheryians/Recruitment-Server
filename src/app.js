@@ -10,6 +10,8 @@ import errorHandler from './middlewares/errorHandler.middleware.js';
 import cookieParser from "cookie-parser";
 import jobCategoryRoutes from "./routes/jobCategory.routes.js";
 import aiRoutes from './routes/ai.routes.js'
+import clientRoutes from "./routes/client.routes.js";
+
 import { corsOptions } from "./config/corsOptions.js";
 const app = express();
 
@@ -25,6 +27,8 @@ app.use("/api/jobs",jobRoleRoutes);
 app.use("/api/job-categories", jobCategoryRoutes);
 app.use("/api/skills", skillRoutes);
 app.use("/api/ai", aiRoutes)
+app.use("/api/client", clientRoutes);
+
 
 app.use(errorHandler);
 
