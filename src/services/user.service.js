@@ -22,6 +22,7 @@ class UserService {
     );
   }
 
+  // ! ISSUE: please destructure the data we are getting in parameters for proper readablity 
   async register(userData) {
     const cacheKey = `user:email:${userData.email}`;
     let existingUser = await this.cacheRepository.get(cacheKey);
@@ -39,6 +40,7 @@ class UserService {
       throw new AppError("Failed to create user", 500)
     }
 
+    // ! ISSUE: too much data we are storing inside cache
     await this.cacheRepository.set(
       `user:id:${userWithRole._id}`,
       {
@@ -76,6 +78,8 @@ class UserService {
     const refreshToken = jwt.sign({ id: userWithRole._id }, config.REFRESH_SECRET, {
       expiresIn: config.REFRESH_EXPIRES_IN,
     });
+
+    // ! ISSUE: we don't need to save refresh token in the cache
     await this.saveRefreshToken(userWithRole._id, refreshToken);
 
     return {
@@ -100,6 +104,8 @@ class UserService {
     const cacheKey = `user:email:${email}`;
     let user = await this.cacheRepository.get(cacheKey);
     if (user) {
+
+      // ! ISSUE: repeated code
       user.comparePassword = async function (password) {
         return bcrypt.compare(password, this.password);
       };
@@ -110,6 +116,7 @@ class UserService {
       await this.cacheRepository.set(cacheKey, user, 3600);
     }
 
+    // ! ISSUE: repeated code
     user.comparePassword = async function (password) {
       return bcrypt.compare(password, this.password);
     };
@@ -206,12 +213,14 @@ class UserService {
   }
 
   async updateUser(id, userData) {
+    // ! ISSUE: perform validation in routes
     const { error } = this.updateUserSchema.validate(userData);
     if (error) throw new AppError(error.message, 400);
 
     const user = await this.userRepository.updateUser(id, userData);
     if (!user) throw new AppError("User not found", 404);
 
+    // ! ISSUE: user.role will be undefined
     await this.cacheRepository.set(
       `user:id:${id}`,
       { id: user._id, email: user.email, role: user.role, name: user.name },
@@ -236,6 +245,8 @@ class UserService {
   async updateMe(userId, updates) {
     if (!userId) throw new AppError("Unauthorized", 401);
 
+
+    // ! ISSUE : perform validation in routes
     const { error, value } = updateMeSchema.validate(updates, {
       abortEarly: false,
       stripUnknown: true,
@@ -255,6 +266,7 @@ class UserService {
       firstName: updated.firstName,
       lastName: updated.lastName,
       phoneNumber: updated.phoneNumber,
+      // ! ISSUE: user.role will be undefined save role as well you save in register
     };
 
     // Refresh id cache
@@ -294,8 +306,9 @@ class UserService {
       throw new Error("Old password is incorrect");
     }
 
+    // ! ISSUE: don't hash password again as we already hashing it on pre save method causes logical error
     // 3. Hash new password (use saltRounds=12 for strong security)
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, 10); 
 
     // 4. Update password and save
     await this.userRepository.updateUser(userId, { password: hashed });

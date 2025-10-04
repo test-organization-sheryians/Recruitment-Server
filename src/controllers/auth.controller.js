@@ -40,6 +40,8 @@ class AuthController {
     try {
       const userData = req.body;
       const result = await this.userService.register(userData);
+
+      // ! ISSUE: don't save access token in cookies and use proper naming convention
       res.cookie("token", result.token, {
         httpOnly: true,
         secure: true,

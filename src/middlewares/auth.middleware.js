@@ -2,6 +2,8 @@ import AuthService from "../services/auth.service.js";
 import { AppError } from "../utils/errors.js";
 import { redisClient } from "../config/redis.js";
 
+// ! ISSUE : we can use on of the LLD pattern to intentiate the object, 
+// ! rather than exporting the whole class, export only instance
 const authService = new AuthService();
 
 export const authenticateJWT = async (req, res, next) => {
