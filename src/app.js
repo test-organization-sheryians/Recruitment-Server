@@ -11,7 +11,9 @@ import cookieParser from "cookie-parser";
 import jobCategoryRoutes from "./routes/jobCategory.routes.js";
 import aiRoutes from './routes/ai.routes.js'
 import { corsOptions } from "./config/corsOptions.js";
+import jobApplicationRoutes from './routes/jobApplication.routes.js';
 const app = express();
+
 
 app.use(express.json());
 app.use(cookieParser());
@@ -20,11 +22,12 @@ app.use(cors(corsOptions));
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
-app.use("/api/permissions",permissionRoutes);
-app.use("/api/jobs",jobRoleRoutes);
+app.use("/api/permissions", permissionRoutes);
+app.use("/api/jobs", jobRoleRoutes);
 app.use("/api/job-categories", jobCategoryRoutes);
 app.use("/api/skills", skillRoutes);
-app.use("/api/ai", aiRoutes)
+app.use("/api/ai", aiRoutes);
+app.use('/api/job-applications', jobApplicationRoutes);
 
 app.use(errorHandler);
 
