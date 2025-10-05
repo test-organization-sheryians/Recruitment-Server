@@ -4,6 +4,8 @@ import { AppError } from "../utils/errors.js";
 import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import bcrypt from "bcryptjs";
+// Fixed: Import the validation schema correctly
+import { updateUserSchema } from "../middlewares/validators/user.validator.js";
 
 const { JWT_SECRET } = config;
 
@@ -34,9 +36,9 @@ class UserService {
 
     const user = await this.userRepository.createUser(userData);
 
-    const userWithRole = await this.userRepository.findUserById(user._id)
-    if(!userWithRole) {
-      throw new AppError("Failed to create user", 500)
+    const userWithRole = await this.userRepository.findUserById(user._id);
+    if (!userWithRole) {
+      throw new AppError("Failed to create user", 500);
     }
 
     await this.cacheRepository.set(
@@ -73,9 +75,14 @@ class UserService {
     );
     // ...........................refresh token........................
 
-    const refreshToken = jwt.sign({ id: userWithRole._id }, config.REFRESH_SECRET, {
-      expiresIn: config.REFRESH_EXPIRES_IN,
-    });
+
+    const refreshToken = jwt.sign(
+      { id: userWithRole._id },
+      config.REFRESH_SECRET,
+      {
+        expiresIn: config.REFRESH_EXPIRES_IN,
+      }
+    );
     await this.saveRefreshToken(userWithRole._id, refreshToken);
 
     return {
@@ -105,7 +112,6 @@ class UserService {
       };
     } else {
       user = await this.userRepository.findUserByEmail(email);
-      console.log(user);
       if (!user) throw new AppError("Invalid credentials", 401);
       await this.cacheRepository.set(cacheKey, user, 3600);
     }
@@ -119,8 +125,8 @@ class UserService {
 
     const userWithRole = await this.userRepository.findUserById(user._id);
 
-    if(!userWithRole) {
-      throw new AppError("Failed to authenticate user", 500)
+    if (!userWithRole) {
+      throw new AppError("Failed to authenticate user", 500);
     }
 
     await this.cacheRepository.set(`user:id:${userWithRole._id}`, userWithRole, 3600);
@@ -141,9 +147,13 @@ class UserService {
       }
     );
 
-    const refreshToken = jwt.sign({ id: userWithRole._id }, config.REFRESH_SECRET, {
-      expiresIn: config.REFRESH_EXPIRES_IN,
-    });
+    const refreshToken = jwt.sign(
+      { id: userWithRole._id },
+      config.REFRESH_SECRET,
+      {
+        expiresIn: config.REFRESH_EXPIRES_IN,
+      }
+    );
     await this.saveRefreshToken(userWithRole._id, refreshToken);
 
     return {
@@ -168,7 +178,7 @@ class UserService {
     if (!refreshToken) throw new AppError("Unauthorized", 401);
 
     try {
-      const payload = jwt.verify(refreshToken, REFRESH_SECRET);
+      const payload = jwt.verify(refreshToken, config.REFRESH_SECRET);
 
       const stored = await this.cacheRepository.get(`refresh:${payload.id}`);
       if (!stored || stored !== refreshToken)
@@ -177,13 +187,17 @@ class UserService {
       const token = jwt.sign(
         { id: payload.id, role: payload.role },
         JWT_SECRET,
-        { expiresIn: ACCESS_EXPIRES_IN }
+        { expiresIn: config.ACCESS_EXPIRES_IN }
       );
 
       // generate new refresh token
-      const newRefreshToken = jwt.sign({ id: payload.id }, REFRESH_SECRET, {
-        expiresIn: REFRESH_EXPIRES_IN,
-      });
+      const newRefreshToken = jwt.sign(
+        { id: payload.id },
+        config.REFRESH_SECRET,
+        {
+          expiresIn: config.REFRESH_EXPIRES_IN,
+        }
+      );
 
       // save new refresh token in cache
       await this.saveRefreshToken(payload.id, newRefreshToken);
@@ -206,8 +220,12 @@ class UserService {
   }
 
   async updateUser(id, userData) {
-    const { error } = this.updateUserSchema.validate(userData);
-    if (error) throw new AppError(error.message, 400);
+    // Fixed: use the imported schema here instead of this.updateUserSchema (which was undefined)
+    const { error } = updateUserSchema.validate(userData, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+    if (error) throw new AppError(error.details.map((d) => d.message).join(", "), 400);
 
     const user = await this.userRepository.updateUser(id, userData);
     if (!user) throw new AppError("User not found", 404);
@@ -218,6 +236,7 @@ class UserService {
       3600
     );
 
+    // Handle email cache update including invalidation of old email key
     if (userData.email) {
       await this.cacheRepository.set(`user:email:${user.email}`, user, 3600);
       if (userData.email !== user.email) {
@@ -236,7 +255,9 @@ class UserService {
   async updateMe(userId, updates) {
     if (!userId) throw new AppError("Unauthorized", 401);
 
-    const { error, value } = updateMeSchema.validate(updates, {
+    // Optional: you might want to reuse updateUserSchema here or another dedicated updateMeSchema
+    // Here just validate same updateUserSchema to keep consistent:
+    const { error, value } = updateUserSchema.validate(updates, {
       abortEarly: false,
       stripUnknown: true,
     });
@@ -285,16 +306,16 @@ class UserService {
     // 1. Fetch user with hashed password (project only password)
     const user = await this.userRepository.findUserById(userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("User not found", 404);
     }
 
     // 2. Compare old password with stored hash
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      throw new Error("Old password is incorrect");
+      throw new AppError("Old password is incorrect", 400);
     }
 
-    // 3. Hash new password (use saltRounds=12 for strong security)
+    // 3. Hash new password (use saltRounds=10 for good security)
     const hashed = await bcrypt.hash(newPassword, 10);
 
     // 4. Update password and save
