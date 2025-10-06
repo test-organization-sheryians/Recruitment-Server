@@ -6,6 +6,7 @@ const workflow = new StateGraph({
     channels: {
         profile: null,
         questionsData: null,
+        questions: null,
         answers: null,
         evaluations: null,
         total: null
