@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/environment.js";
 import bcrypt from "bcryptjs";
 
-const { JWT_SECRET } = config;
+const { JWT_SECRET } = config; 
 
 class UserService {
   constructor() {
@@ -105,7 +105,6 @@ class UserService {
       };
     } else {
       user = await this.userRepository.findUserByEmail(email);
-      console.log(user);
       if (!user) throw new AppError("Invalid credentials", 401);
       await this.cacheRepository.set(cacheKey, user, 3600);
     }
