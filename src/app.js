@@ -15,7 +15,9 @@ import educationRoutes from './routes/education.routes.js'
 import clientRoutes from "./routes/client.routes.js";
 
 import { corsOptions } from "./config/corsOptions.js";
+import jobApplicationRoutes from './routes/jobApplication.routes.js';
 const app = express();
+
 
 app.use(express.json());
 app.use(cookieParser());
@@ -32,7 +34,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/job-requirements", jobRequirementRoutes);
 app.use("/api/educations", educationRoutes)
 app.use("/api/client", clientRoutes);
-
+app.use('/api/job-applications', jobApplicationRoutes);
 
 app.use(errorHandler);
 
