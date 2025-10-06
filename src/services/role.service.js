@@ -1,5 +1,5 @@
 // src/services/role.service.js
-import MongoRoleRepository from "../repositories/implementations/mongoPermissionRepository.js";
+import MongoRoleRepository from "../repositories/implementations/mongoRoleRepository.js";
 import MongoPermissionRepository from "../repositories/implementations/mongoPermissionRepository.js";
 import { AppError } from "../utils/errors.js";
 
