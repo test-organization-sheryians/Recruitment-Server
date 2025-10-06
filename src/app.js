@@ -12,6 +12,8 @@ import jobCategoryRoutes from "./routes/jobCategory.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import jobRequirementRoutes from "./routes/jobRequirement.routes.js";
 import educationRoutes from './routes/education.routes.js'
+import clientRoutes from "./routes/client.routes.js";
+
 import { corsOptions } from "./config/corsOptions.js";
 const app = express();
 
@@ -29,6 +31,8 @@ app.use("/api/skills", skillRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/job-requirements", jobRequirementRoutes);
 app.use("/api/educations", educationRoutes)
+app.use("/api/client", clientRoutes);
+
 
 app.use(errorHandler);
 
