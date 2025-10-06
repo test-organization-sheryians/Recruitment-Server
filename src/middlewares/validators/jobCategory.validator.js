@@ -1,5 +1,5 @@
-import Joi from "joi";
-import { AppError } from "../../utils/errors.js";  
+import Joi from "joi"; 
+import validate from "../../utils/validateFnc.js";
 
 const jobCategorySchema = Joi.object({
   name: Joi.string().trim().min(2).max(62).required().messages({
@@ -19,17 +19,6 @@ const updateJobCategorySchema = Joi.object({
     "string.max": "Category name must be at most 62 characters",
   }),
 });
-
-
-const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
-  if (error) {
-    const message = error.details.map((d) => d.message).join(", ");
-    return next(new AppError(message, 400));
-  }
-  next();
-};
-
 
 export const createJobCategoryValidator = validate(jobCategorySchema);
 export const updateJobCategoryValidator = validate(updateJobCategorySchema);

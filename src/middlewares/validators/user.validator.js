@@ -1,5 +1,5 @@
-import Joi from "joi";
-import { AppError } from "../../utils/errors.js";
+import Joi from "joi"; 
+import validate from "../../utils/validateFnc.js";
 
 export const updateUserSchema = Joi.object({
   email: Joi.string().email().messages({
@@ -19,12 +19,5 @@ export const updateUserSchema = Joi.object({
   }),
 }).min(1); 
 
-const validate = (schema) => (req, _res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
-  if (error) {
-    return next(new AppError(error.details.map((d) => d.message).join(", "), 400));
-  }
-  next();
-};
 
 export const updateUserValidator = validate(updateUserSchema);

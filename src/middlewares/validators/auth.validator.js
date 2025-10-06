@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { AppError } from "../../utils/errors.js";
+import validate from "../../utils/validateFnc.js";
 
 const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
@@ -9,9 +9,6 @@ const registerSchema = Joi.object({
   password: Joi.string().min(4).required().messages({
     "string.min": "Password must be at least 4 characters long",
     "any.required": "Password is required",
-  }),
-  roleId: Joi.string().required().messages({
-    "any.required": "Role is required",
   }),
   firstName: Joi.string().required().messages({
     "any.required": "First name is required",
@@ -46,15 +43,6 @@ const resetPasswordSchema = Joi.object({
   }),
 });
 
-const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
-  if (error) {
-    return next(
-      new AppError(error.details.map((d) => d.message).join(", "), 400)
-    );
-  }
-  next();
-};
 
 export const registerValidator = validate(registerSchema);
 export const loginValidator = validate(loginSchema);

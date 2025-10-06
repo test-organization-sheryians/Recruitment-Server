@@ -63,4 +63,4 @@ class PermissionService {
   }
 }
 
-export default PermissionService;
+export default new PermissionService();

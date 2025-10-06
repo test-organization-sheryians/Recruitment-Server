@@ -48,4 +48,4 @@ class JobCategoryService {
   }
 }
 
-export default JobCategoryService;
+export default new JobCategoryService();

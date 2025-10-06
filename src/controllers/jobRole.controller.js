@@ -2,7 +2,7 @@ import JobRoleService from "../services/jobRole.service.js";
 
 class JobRoleController {
   constructor() {
-    this.jobRoleService = new JobRoleService();
+    this.jobRoleService = JobRoleService;
   }
 
   createJobRole = async (req, res, next) => {

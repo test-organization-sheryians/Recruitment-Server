@@ -2,7 +2,7 @@ import JobCategoryService from "../services/jobCategory.service.js";
 
 class JobCategoryController {
   constructor() {
-    this.jobCategoryService = new JobCategoryService();
+    this.jobCategoryService = JobCategoryService;
   }
 
   create = async (req, res, next) => {

@@ -111,4 +111,4 @@ class JobRoleService {
   }
 }
 
-export default JobRoleService;
+export default new JobRoleService();

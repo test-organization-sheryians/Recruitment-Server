@@ -61,4 +61,4 @@ class RoleService {
   }
 }
 
-export default RoleService;
+export default new RoleService();
