@@ -1,5 +1,5 @@
-import Joi from "joi";
-import { AppError } from "../../utils/errors.js";
+import Joi from "joi"; 
+import validate from "../../utils/validateFnc.js";
 
 const createJobRoleSchema = Joi.object({
   title: Joi.string().min(3).max(100).required().messages({
@@ -97,15 +97,7 @@ const filterJobRolesSchema = Joi.object({
   }),
 });
 
-const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
-  if (error) {
-    return next(
-      new AppError(error.details.map((d) => d.message).join(", "), 400)
-    );
-  }
-  next();
-};
+
 
 const validateQuery = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.query, { abortEarly: false });

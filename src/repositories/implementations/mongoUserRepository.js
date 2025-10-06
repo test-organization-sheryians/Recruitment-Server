@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import IUserRepository from "../contracts/IUserRepository.js";
 import User from "../../models/user.model.js";
 import { AppError } from "../../utils/errors.js";
+import bcrypt from "bcryptjs";
 
 class MongoUserRepository extends IUserRepository {
   async createUser(userData) {
@@ -155,6 +156,14 @@ class MongoUserRepository extends IUserRepository {
     } catch (error) {
       throw new AppError("Failed to update user", 500, error);
     }
+  }
+
+  async comparePassword(password, userPassword) {
+    return await bcrypt.compare(password, userPassword);
+  }
+
+  async hashPassword(password) {
+    return await bcrypt.hash(password, 10);
   }
 }
 

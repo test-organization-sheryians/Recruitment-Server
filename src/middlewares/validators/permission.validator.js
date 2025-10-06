@@ -1,5 +1,5 @@
-import Joi from "joi";
-import { AppError } from "../../utils/errors.js";
+import Joi from "joi"; 
+import validate from "../../utils/validateFnc.js";
 
 const permissionSchema = Joi.object({
   resource: Joi.string().required().messages({
@@ -16,15 +16,5 @@ const permissionSchema = Joi.object({
     "any.required": "RoleId is required",
   }),
 });
-
-const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
-  if (error) {
-    return next(
-      new AppError(error.details.map((d) => d.message).join(", "), 400)
-    );
-  }
-  next();
-};
 
 export const permissionValidator = validate(permissionSchema);

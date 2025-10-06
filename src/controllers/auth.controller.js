@@ -5,30 +5,44 @@ import { redisClient } from "../config/redis.js";
 
 class AuthController {
   constructor() {
-    this.userService = new UserService();
-    this.authService = new AuthService();
+    this.userService = UserService;
+    this.authService = AuthService;
+  }
+
+  // Cookie configuration constants
+  #ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000; // 15 minutes
+  #REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  #cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  };
+
+  #setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie("accessToken", accessToken, {
+      ...this.#cookieOptions,
+      maxAge: this.#ACCESS_TOKEN_MAX_AGE,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      ...this.#cookieOptions,
+      maxAge: this.#REFRESH_TOKEN_MAX_AGE,
+    });
   }
 
   refreshTokenController = async (req, res, next) => {
     try {
-      const refreshToken = req.cookies.refreshToken;
-      if (!refreshToken) throw new AppError("Unauthorized", 401);
+      const { refreshToken } = req.cookies;
+      
+      if (!refreshToken) {
+        throw new AppError("Unauthorized", 401);
+      }
 
-      const tokens = await this.userService.refresh(refreshToken);
+      const { accessToken, refreshToken: newRefreshToken } = 
+        await this.userService.refresh(refreshToken);
 
-      res.cookie("token", tokens.accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.cookie("refreshToken", tokens.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      this.#setAuthCookies(res, accessToken, newRefreshToken);
 
       res.status(200).json({ success: true });
     } catch (err) {
@@ -38,25 +52,25 @@ class AuthController {
 
   register = async (req, res, next) => {
     try {
-      const userData = req.body;
-      const result = await this.userService.register(userData);
+      const { email, phoneNumber, password, firstName, lastName, roleId } = req.body;
+      
+      
+      const { accessToken, refreshToken, ...userData } = 
+        await this.userService.register({
+          email,
+          phoneNumber,
+          password,
+          firstName,
+          lastName,
+          roleId,
+        });
 
-      // ! ISSUE: don't save access token in cookies and use proper naming convention
-      res.cookie("token", result.token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 60 * 60 * 1000,
+      this.#setAuthCookies(res, accessToken, refreshToken);
+
+      res.status(201).json({ 
+        success: true, 
+        data: userData 
       });
-
-      res.cookie("refreshToken", result.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      res.status(201).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -65,22 +79,16 @@ class AuthController {
   login = async (req, res, next) => {
     try {
       const { email, password } = req.body;
-      const result = await this.userService.login({ email, password });
-      res.cookie("token", result.token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 60 * 60 * 1000,
-      });
+      
+      const { accessToken, refreshToken, ...userData } = 
+        await this.userService.login({ email, password });
 
-      res.cookie("refreshToken", result.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      this.#setAuthCookies(res, accessToken, refreshToken);
 
-      res.status(200).json({ success: true, data: result });
+      res.status(200).json({ 
+        success: true, 
+        data: userData 
+      });
     } catch (error) {
       next(error);
     }
@@ -90,7 +98,11 @@ class AuthController {
     try {
       const { id } = req.params;
       const user = await this.userService.getUser(id);
-      res.status(200).json({ success: true, data: user });
+      
+      res.status(200).json({ 
+        success: true, 
+        data: user 
+      });
     } catch (error) {
       next(error);
     }
@@ -99,9 +111,20 @@ class AuthController {
   updateUser = async (req, res, next) => {
     try {
       const { id } = req.params;
-      const userData = req.body;
-      const user = await this.userService.updateUser(id, userData);
-      res.status(200).json({ success: true, data: user });
+      const { email, phoneNumber, firstName, lastName, roleId } = req.body;
+      
+      const user = await this.userService.updateUser(id, {
+        email,
+        phoneNumber,
+        firstName,
+        lastName,
+        roleId,
+      });
+      
+      res.status(200).json({ 
+        success: true, 
+        data: user 
+      });
     } catch (error) {
       next(error);
     }
@@ -109,28 +132,39 @@ class AuthController {
 
   logout = async (req, res, next) => {
     try {
-      const token =
-        req.cookies?.token ||
-        req.header("Authorization")?.replace("Bearer ", "");
+      const { accessToken, refreshToken } = req.cookies;
+      const token = accessToken || req.header("Authorization")?.replace("Bearer ", "");
 
+      // Blacklist access token if present
       if (token) {
         const decoded = this.authService.verifyToken(token);
-        const exp = decoded.exp * 1000; 
+        const exp = decoded.exp * 1000;
         const ttl = Math.floor((exp - Date.now()) / 1000);
+        
         if (ttl > 0) {
           await redisClient.setEx(`bl_${token}`, ttl, "blacklisted");
         }
       }
 
-      res.clearCookie("token", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-      });
+      // Blacklist refresh token if present
+      if (refreshToken) {
+        const decoded = this.authService.verifyToken(refreshToken);
+        const exp = decoded.exp * 1000;
+        const ttl = Math.floor((exp - Date.now()) / 1000);
+        
+        if (ttl > 0) {
+          await redisClient.setEx(`bl_${refreshToken}`, ttl, "blacklisted");
+        }
+      }
 
-      res
-        .status(200)
-        .json({ success: true, message: "Logged out successfully" });
+      // Clear cookies
+      res.clearCookie("accessToken", this.#cookieOptions);
+      res.clearCookie("refreshToken", this.#cookieOptions);
+
+      res.status(200).json({ 
+        success: true, 
+        message: "Logged out successfully" 
+      });
     } catch (error) {
       next(error);
     }
@@ -139,30 +173,24 @@ class AuthController {
   resetPassword = async (req, res, next) => {
     try {
       const { oldPassword, newPassword } = req.body;
+      const { userId } = req;
 
-      const userId = req.userId;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        throw new AppError("Unauthorized", 401);
       }
 
-      const result = await this.userService.resetPassword(
-        userId,
-        oldPassword,
-        newPassword
-      );
+      await this.userService.resetPassword(userId, oldPassword, newPassword);
 
-      if (result) {
-        return res.status(200).json({
-          success: true,
-          message: "Password updated successfully",
-        });
-      }
+      res.status(200).json({
+        success: true,
+        message: "Password updated successfully",
+      });
     } catch (error) {
       if (error.message === "Old password is incorrect") {
-        return res.status(401).json({ success: false, message: error.message });
+        return res.status(401).json({ 
+          success: false, 
+          message: error.message 
+        });
       }
       next(error);
     }

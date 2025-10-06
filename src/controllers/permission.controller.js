@@ -2,7 +2,7 @@ import PermissionService from "../services/permission.service.js";
 
 class PermissionController {
   constructor() {
-    this.permissionService = new PermissionService();
+    this.permissionService = PermissionService;
   }
 
   createPermission = async (req, res, next) => {

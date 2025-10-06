@@ -2,28 +2,27 @@ import AuthService from "../services/auth.service.js";
 import { AppError } from "../utils/errors.js";
 import { redisClient } from "../config/redis.js";
 
-// ! ISSUE : we can use on of the LLD pattern to intentiate the object, 
-// ! rather than exporting the whole class, export only instance
-const authService = new AuthService();
+
+const authService = AuthService;
 
 export const authenticateJWT = async (req, res, next) => {
   try {
-    const token =
-      req.cookies?.token || req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) {
-      throw new AppError("Access denied. No token provided.", 401);
+    const accessToken =
+      req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+    if (!accessToken) {
+      throw new AppError("Access denied. No accessToken provided.", 401);
     }
     
-    const isBlacklisted = await redisClient.get(`bl_${token}`);
+    const isBlacklisted = await redisClient.get(`bl_${accessToken}`);
     if (isBlacklisted) {
-      throw new AppError("Token has been logged out.", 401);
+      throw new AppError("accessToken has been logged out.", 401);
     }
 
-    const decoded = authService.verifyToken(token);
+    const decoded = authService.verifyAccessToken(accessToken);
     req.userId = decoded.id;
     req.roleId = decoded.role._id;
     next();
   } catch (error) {
-    next(new AppError("Invalid or expired token.", 401));
+    next(new AppError("Invalid or expired accessToken.", 401));
   }
 };
