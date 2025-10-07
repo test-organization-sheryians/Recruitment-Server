@@ -1,5 +1,6 @@
 import authService from "../services/auth.service.js";
 import { AppError } from "../utils/errors.js";
+import logger from "../utils/logger.js";
 
 export const authorize = (resource, action) => {
   return async (req, res, next) => {
@@ -15,6 +16,7 @@ export const authorize = (resource, action) => {
         resource,
         action
       );
+      console.log(hasPermission)
 
       if (!hasPermission) {
         logger.info("Access denied. Insufficient permissions.");

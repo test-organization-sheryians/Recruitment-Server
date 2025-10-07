@@ -1,5 +1,5 @@
 // src/services/role.service.js
-import MongoRoleRepository from "../repositories/implementations/mongoPermissionRepository.js";
+import MongoRoleRepository from "../repositories/implementations/mongoRoleRepository.js";
 import MongoPermissionRepository from "../repositories/implementations/mongoPermissionRepository.js";
 import { AppError } from "../utils/errors.js";
 
@@ -10,7 +10,8 @@ class RoleService {
   }
 
   async createRole(roleData) {
-    const existingRole = await this.roleRepository.findRoleByName(roleData.name);
+    let {name}=roleData
+    const existingRole = await this.roleRepository.findRoleByName(name);
     if (existingRole) {
       throw new AppError("Role already exists", 409);
     }

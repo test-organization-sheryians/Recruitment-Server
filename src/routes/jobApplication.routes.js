@@ -7,7 +7,7 @@ import {
     updateJobApplicationSchema,
     updateStatusSchema,
 } from '../middlewares/validators/jobApplication.validator.js';
-import validateRequest from '../middlewares/validators/validateRequest.js';
+import validateRequest from '../utils/validateFnc.js';
 import { authorize } from "../middlewares/role.middleware.js";
 import { authenticateJWT } from "../middlewares/auth.middleware.js";
 

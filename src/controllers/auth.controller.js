@@ -132,31 +132,6 @@ class AuthController {
 
   logout = async (req, res, next) => {
     try {
-      const { accessToken, refreshToken } = req.cookies;
-      const token = accessToken || req.header("Authorization")?.replace("Bearer ", "");
-
-      // Blacklist access token if present
-      if (token) {
-        const decoded = this.authService.verifyToken(token);
-        const exp = decoded.exp * 1000;
-        const ttl = Math.floor((exp - Date.now()) / 1000);
-        
-        if (ttl > 0) {
-          await redisClient.setEx(`bl_${token}`, ttl, "blacklisted");
-        }
-      }
-
-      // Blacklist refresh token if present
-      if (refreshToken) {
-        const decoded = this.authService.verifyToken(refreshToken);
-        const exp = decoded.exp * 1000;
-        const ttl = Math.floor((exp - Date.now()) / 1000);
-        
-        if (ttl > 0) {
-          await redisClient.setEx(`bl_${refreshToken}`, ttl, "blacklisted");
-        }
-      }
-
       // Clear cookies
       res.clearCookie("accessToken", this.#cookieOptions);
       res.clearCookie("refreshToken", this.#cookieOptions);

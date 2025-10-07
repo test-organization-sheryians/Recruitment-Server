@@ -165,6 +165,14 @@ class MongoUserRepository extends IUserRepository {
   async hashPassword(password) {
     return await bcrypt.hash(password, 10);
   }
+
+  async deleteUser(id){
+   try {
+      return await User.findByIdAndDelete(id);
+    } catch (error) {
+      throw new AppError("Failed to delete user", 500, error);
+    }
+  }
 }
 
 export default MongoUserRepository;

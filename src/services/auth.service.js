@@ -152,7 +152,6 @@ class AuthService {
           },
         },
       ]);
-
       return result[0]?.hasPermission || false;
     } catch (error) {
       console.error("Error in hasPermission:", error);
